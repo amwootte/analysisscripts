@@ -5,7 +5,7 @@
 step4 = function(step2_filename,colorchoicediff,BINLIMIT,diffbartype){
 
 # must pass in the following: step2_filename, colorchoicediff, BINLIMIT, diffbartype
-# /data2/3to5/I35/ens_means/tasmax_ensmean_absolute_2071-2099.nc
+# file format recommended /data2/3to5/I35/ens_means/tasmax_ensmean_absolute_2071-2099.nc
   
 split1 = strsplit(step2_filename,"/",fixed=TRUE)[[1]]
 split2 = strsplit(split1[length(split1)],"_",fixed=TRUE)[[1]]
