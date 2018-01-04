@@ -97,4 +97,4 @@ arg.len <- length(args)
 
 parsed.args <- ParseArgs(args)
 
-step4(step2_filename=parsed.args$filename,outfiletype=parsed.args$outfiletype)
+step5(step2_filename=parsed.args$filename,outfiletype=parsed.args$outfiletype)
