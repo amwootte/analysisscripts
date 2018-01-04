@@ -87,7 +87,7 @@ ParseArgs <- function(arg.list){
                       "of ensemble mean projected change by emissions scenario")
   epilouge = paste("Please note: flags may be specified in any order, and '='", 
                    "not required to specify strings.")
-  usage = paste("usage: %prog --input filename --projnotes projnotes -c color_choice -d difftype -b BINLIMIT")
+  usage = paste("usage: %prog --input filename -c color_choice -d difftype -b BINLIMIT")
   return(parse_args(OptionParser(option_list=option_list, usage=usage, 
                                  description = description, epilogue=epilouge), 
                     args=arg.list))
