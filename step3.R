@@ -12,6 +12,8 @@ step3 = function(step1_filename,projnotes,colorchoicediff,BINLIMIT,diffbartype){
 # BINLIMIT = 30
 # diffbartype = "difference"
 
+  projnotes = do.call("c",strsplit(projnotes,",",fixed=TRUE))
+  
 split1 = strsplit(step1_filename,"/",fixed=TRUE)[[1]]
 split2 = strsplit(split1[length(split1)],"_",fixed=TRUE)[[1]]
 
@@ -89,24 +91,24 @@ ParseArgs <- function(arg.list){
                            " Comma delimited for all members")),
     make_option(c("-c", "--color_choice"), action="store", default="bluetored",
                 dest='colorchoicediff',
-                help=paste("Listing of available information from each member. ", 
-                           "Must have the same number of members as the projected change in the input file.",
-                           " Will throw an error if the list is not given. Must take this structure GCM_DS_obs_scen.",
-                           " Comma delimited for all members")),
-    make_option(c("-p", "--projnotes"), action="store",
-                dest='projnotes',
-                help=paste("Listing of available information from each member. ", 
-                           "Must have the same number of members as the projected change in the input file.",
-                           " Will throw an error if the list is not given. Must take this structure GCM_DS_obs_scen.",
-                           " Comma delimited for all members"))
+                help=paste("Color bar choices for plotting. ", 
+                           "This includes the following options: bluetored (default), redtoblue, yellowtored,",
+                           " whitetored, browntogreen, greentobrown, whitetogreen, and whitetobrown.")),
+    make_option(c("-d", "--diffbartype"), action="store", default="difference",
+                dest='diffbartype',
+                help=paste("The type of plot being produced, important for getting the colorbar right in the internal functions. ", 
+                           "This includes the following options: difference (default), raw, or ratio.")),
+    make_option(c("-b", "--bin_limit"), action="store", default=30,
+                dest='BINLIMIT',
+                help=paste("Maximum number of bins allowed in the colorbar. Defaults to 30."))
     
   )
   
   description = paste('Given the filename from step1.R and the metadata list for individual members ', 
-                      "this will calculate ensemble mean change and ensemble mean value by emissions scenario.")
+                      "this will produce the multi-panel plot of the individual members by emissions scenarios.")
   epilouge = paste("Please note: flags may be specified in any order, and '='", 
                    "not required to specify strings.")
-  usage = paste("usage: %prog --input filename --projnotes projnotes")
+  usage = paste("usage: %prog --input filename --projnotes projnotes -c color_choice -d difftype -b BINLIMIT")
   return(parse_args(OptionParser(option_list=option_list, usage=usage, 
                                  description = description, epilogue=epilouge), 
                     args=arg.list))
@@ -119,7 +121,7 @@ arg.len <- length(args)
 
 parsed.args <- ParseArgs(args)
 
-step2(step1_filename=parsed.args$filename,projnotes = parsed.args$projnotes)
+step3(step1_filename=parsed.args$filename,projnotes = parsed.args$projnotes,colorchoicediff=parsed.args$colorchoicediff,BINLIMIT=parsed.args$BINLIMIT,diffbartype=parsed.args$diffbartype)
 
 
 
