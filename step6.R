@@ -93,6 +93,39 @@ step6 = function(step1_filename,histnotes,projnotes,regionname,regiontype,boxXex
   
   }
   
+  #######
+  # for shapefile based calculations
+  
+  if(regiontype="shape"){
+    test = readShapePoly(shapefile) # appropriate filename format
+    projection(test) <- CRS("+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs")
+    
+    test.sub <- test[as.character(test@data$STATE_NAME) %in% areaname, ] # in here are two important details. 1) column name in the data array, 2) item in the data array to subset by
+    tmpV = histlist[,,1] # need the 
+    
+    modrasV = raster(t(tmpV)[length(lat):1,])
+    if(all(lon>0)){
+      extent(modrasV) = c(min(lon)-360,max(lon)-360,min(lat),max(lat))
+    } else {
+      extent(modrasV) = c(min(lon),max(lon),min(lat),max(lat))
+    }
+    mod.subV <- crop(modrasV, extent(test.sub))
+    mod.subV <- mask(modrasV, test.sub)
+    
+    testin = matrix(getValues(mod.subV),nrow=length(lon),ncol=length(lat))
+    testin = testin[,length(lat):1]
+    
+    maskuse1 = array(NA,dim=c(length(lon),length(lat),dim(histlist)[3]))
+    maskuse2 = maskuse3 = array(NA,dim=c(length(lon),length(lat),dim(projlist)[3]))
+    for(i in 1:dim(histlist)[3]) maskuse1[,,i] = ifelse(is.na(testin)==FALSE,histlist[,,i],NA)
+    for(i in 1:dim(projlist)[3]) maskuse2[,,i] = ifelse(is.na(testin)==FALSE,projlist[,,i],NA); maskuse3[,,i] = ifelse(is.na(testin)==FALSE,diffs[,,i],NA)
+    
+    histvals = apply(maskuse1,3,mean,na.rm=TRUE)
+    projvals = apply(maskuse2,3,mean,na.rm=TRUE)
+    diffvals = apply(maskuse3,3,mean,na.rm=TRUE)
+    
+  }
+  
   ####
   # Create output table
   
