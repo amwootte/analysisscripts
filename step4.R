@@ -38,9 +38,9 @@ par(mfrow=c(1,2))
   surface(testsfc1,type="I",main="Projected Difference from Historical Climate\nScen: RCP2.6",zlim=diffcolorbar[[1]],col=diffcolorbar[[3]],breaks=diffcolorbar[[2]],xlab="Longitude",ylab="Latitude")
   map("state",add=TRUE)
   
-  testsfc1 = list(x=lon,y=lat,z=rcp45dat)
-  surface(testsfc1,type="I",main="Projected Difference from Historical Climate\nScen: RCP4.5",zlim=diffcolorbar[[1]],col=diffcolorbar[[3]],breaks=diffcolorbar[[2]],xlab="Longitude",ylab="Latitude")
-  map("state",add=TRUE)
+  #testsfc1 = list(x=lon,y=lat,z=rcp45dat)
+  #surface(testsfc1,type="I",main="Projected Difference from Historical Climate\nScen: RCP4.5",zlim=diffcolorbar[[1]],col=diffcolorbar[[3]],breaks=diffcolorbar[[2]],xlab="Longitude",ylab="Latitude")
+  #map("state",add=TRUE)
   
   testsfc1 = list(x=lon,y=lat,z=rcp85dat)
   surface(testsfc1,type="I",main="Projected Difference from Historical Climate\nScen: RCP8.5",zlim=diffcolorbar[[1]],col=diffcolorbar[[3]],breaks=diffcolorbar[[2]],xlab="Longitude",ylab="Latitude")

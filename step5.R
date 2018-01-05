@@ -21,7 +21,7 @@ lon = ncvar_get(test,"lon")
 lat = ncvar_get(test,"lat")
 nc_close(test)
 
-if(outfiletype="GTiff"){
+if(outfiletype=="GTiff"){
 
 dataras = raster(t(projdiff_rcp26[,length(lat):1]))
 if(all(lon>0)) {
@@ -75,7 +75,7 @@ ParseArgs <- function(arg.list){
                 help=paste("Input file is the output file of something created with step2.R. ", 
                            "Must include the path to the file. If file and path not present, an error will be thrown.")),
     make_option(c("-o", "--outfiletype"), action="store", default="GTiff",
-                dest='colorchoicediff',
+                dest='outfiletype',
                 help=paste("Outfile type options.", 
                            "Currently GTiff is the only one functioning and the default for GeoTIFF output."))
   )

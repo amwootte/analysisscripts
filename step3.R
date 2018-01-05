@@ -47,11 +47,11 @@ diffcolorbar = colorramp(diffs,colorchoice=colorchoicediff,Blimit=BINLIMIT,type=
 diffs_sort = diffs[,,order(projfilebreakdown$scen)]
 projfilebreakdown = projfilebreakdown[order(projfilebreakdown$scen),]
 
-plotfilename = paste("/data2/3to5/I35/plots/all_mems/IndividualMembers_",varname,"_",futureperiod[1],"-",futureperiod[2],"_",difftype,"change.pdf",sep="")
+plotfilename = paste("/data2/3to5/I35/plots/all_mems/IndividualMembers_",varname,"_",futureperiod[1],"-",futureperiod[2],"_",difftype,"_change.pdf",sep="")
 
 pdf(plotfilename,onefile=TRUE,width=10,height=10)
 par(mfrow=c(3,3))
-for(i in 1:length(projfilelist)){
+for(i in 1:length(projnotes)){
   GCM = projfilebreakdown$GCM[i]
   scen = projfilebreakdown$scen[i]
   obs = projfilebreakdown$obs[i]
