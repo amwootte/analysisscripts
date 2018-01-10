@@ -58,26 +58,37 @@ library(sp)
 source("analysisfunctions.R")
 
 # set arguments
-varname = "tmax95"
-DStechs = "EDQM"
-steps = c(1:7)
+varname = "pr25" # these are all required arguments for step 1
+steps = c(1:7) # others can be set based upon what varname is.
 appfunc = "sum"
 difftype = "absolute"
 tempperiod = "annual"
 futureperiod = c(2071,2099)
-varunits = "Number_of_days"
-changeunits = "Number_of_days"
+varunits = "Number_of_Days"
+changeunits = "Number_of_Days"
 BINLIMIT=30
-colorchoicedata = "yellowtored"
-colorchoicediff = "bluetored"
-obsbartype = "raw"
+colorchoicediff = "browntogreen"
 diffbartype = "difference"
-step1_filename = NA
+
+step1_filename = NA # if these are NA and you are not running step1 or step2, then other options that rely on these will break
 step2_filename = NA
+  
+outfileformat = "GTiff" # file format for step 5
+
+lon = c(-101,-94)+360 # information needed for step 6 if regiontype = "box"
+lat = c(33,35)
+regiontype = "box"
+regionname = "RedRiver"
+
+locationname = "OKC" # step 7 required variables
+loc_lon = 262.4836
+loc_lat = 35.4676
+
+############
 
 if(6 %in% steps | 3 %in% steps | 7 %in% steps | 2 %in% steps){
   if(1 %in% steps == FALSE & is.na(step1_filename)==TRUE){
-    stop("To Calculate steps 2,3,6, and 7, you must calculate step2 or provide the file name and path to the Ensemble means file",.call=TRUE)
+    stop("To Calculate steps 2,3,6, and 7, you must calculate step1 or provide the file name and path to the Individual members file",.call=TRUE)
   }
 }
 
@@ -92,7 +103,9 @@ if(varname=="tmax95" | varname=="tmax100") varin="tasmax" # for the tmax95 and o
 if(varname=="tmin32" | varname=="tmin28" | varname=="frd") varin="tasmin"
 if(varname=="pr25" | varname=="pr50" | varname=="mdrn" | varname=="rx1day" | varname=="rx5day" | varname=="cdd" | varname=="cwd") varin="pr"
 
-TC = FALSE
+TC = FALSE 
+TH = NA
+cond=NA
 
 if(varname == "heatwaves"){
   TC=FALSE
@@ -216,7 +229,8 @@ projlist = paste(projfilelist,collapse=",")
 
 if(1 %in% steps){
   # run individual calc
-  command = paste("Rscript step1.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -T ",TC," -H ",TH," -c ",cond,sep="")
+  if(TC==FALSE) command = paste("Rscript step1.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2],sep="")
+  if(TC==TRUE) command = paste("Rscript step1.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -T ",TC," -H ",TH," -c ",cond,sep="")
   system(command,intern=TRUE)
   step1_filename = paste("/data2/3to5/I35/all_mems/",varname,"_allmem_",difftype,"_",futureperiod[1],"-",futureperiod[2],".nc",sep="")
 }
@@ -227,14 +241,14 @@ if(2 %in% steps){
   # run ensemble mean calcs
   command = paste("Rscript step2.R -i ",step1_filename," -p ",paste(projnotes,collapse=","),sep="")
   system(command,intern=TRUE)
-  step2_filename = paste("/data2/3to5/I35/ensmeans/",varname,"_ensmem_",difftype,"_",futureperiod[1],"-",futureperiod[2],".nc",sep="")
+  step2_filename = paste("/data2/3to5/I35/ens_means/",varname,"_ensmean_",difftype,"_",futureperiod[1],"-",futureperiod[2],".nc",sep="")
 }
 
 ########
 
 if(3 %in% steps){
   # run individual member imagery
-  command = paste("Rscript step3.R",varname,step1_filename,difftype,colorbarobs,colorbardiffs,BINLIMIT,obsbartype,diffbartype,futureperiod,tempperiod,sep=" ")
+  command = paste("Rscript step3.R -i ",step1_filename," -p ",paste(projnotes,collapse=",")," -c ",colorchoicediff, " -d ", diffbartype," -b ",BINLIMIT,sep="")
   system(command,intern=TRUE)
 }
 
@@ -242,28 +256,33 @@ if(3 %in% steps){
 
 if(4 %in% steps){
   # run ensemble mean imagery
-  
+  command = paste("Rscript step4.R -i ",step2_filename," -c ",colorchoicediff, " -d ", diffbartype," -b ",BINLIMIT,sep="")
+  system(command,intern=TRUE)
 }
 
 ########
 
 if(5 %in% steps){
   # run ensemble mean file format conversion
-  
+  command = paste("Rscript step5.R -i ",step2_filename," -o ",outfileformat,sep="")
+  system(command,intern=TRUE)
 }
 
 ########
 
 if(6 %in% steps){
   # area range calculation
-  
+  if(regiontype=="box") command = paste("Rscript step6.R -i ",step1_filename," -s ",paste(histnotes,collapse=",")," -p ",paste(projnotes,collapse=",")," -t ",regiontype," -n ",regionname," -x ",paste(lon[1],lon[2],sep=",")," -y ",paste(lat[1],lat[2],sep=","),sep="")
+  if(regiontype=="shape") command = paste("Rscript step6.R -i ",step1_filename," -s ",paste(histnotes,collapse=",")," -p ",paste(projnotes,collapse=",")," -t ",regiontype," -n ",regionname," -f ",shapefile," -d ",shapedimension," -a ",areaname,sep="")
+  system(command,intern=TRUE)
 }
 
 ########
 
 if(7 %in% steps){
   # single location calculation
-  
+  command = paste("Rscript step7.R -i ",step1_filename," -s ",paste(histnotes,collapse=",")," -p ",paste(projnotes,collapse=",")," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
+  system(command,intern=TRUE)
 }
 
 
