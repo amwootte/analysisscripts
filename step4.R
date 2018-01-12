@@ -2,7 +2,7 @@
 # Step 4 analysis 3^5
 #
 
-step4 = function(step2_filename,colorchoicediff,BINLIMIT,diffbartype){
+step4 = function(step2_filename,colorchoicediff,BINLIMIT,diffbartype,use_fixed_scale,fixed_scale){
 
 # must pass in the following: step2_filename, colorchoicediff, BINLIMIT, diffbartype
 # file format recommended /data2/3to5/I35/ens_means/tasmax_ensmean_absolute_2071-2099.nc
@@ -31,7 +31,7 @@ if(all(lon>0)) lon =lon-360
 plotfilename = paste("/data2/3to5/I35/plots/ens_means/EnsMean_",varname,"_",futureperiod[1],"-",futureperiod[2],"_",difftype,"_",seasonin,"_change.pdf",sep="") 
 
 pdf(plotfilename,onefile=TRUE,width=10,height=5)
-diffcolorbar = diff_colorramp(c(rcp26dat,rcp45dat,rcp85dat),colorchoice=colorchoicediff,Blimit=BINLIMIT)
+diffcolorbar = diff_colorramp(c(rcp26dat,rcp45dat,rcp85dat),colorchoice=colorchoicediff,Blimit=BINLIMIT,use_fixed_scale = use_fixed_scale,fixed_scale=fixed_scale)
 
 par(mfrow=c(1,2))
 
@@ -110,4 +110,4 @@ arg.len <- length(args)
 
 parsed.args <- ParseArgs(args)
 
-step4(step2_filename=parsed.args$filename,colorchoicediff=parsed.args$colorchoicediff,BINLIMIT=parsed.args$BINLIMIT,diffbartype=parsed.args$diffbartype)
+step4(step2_filename=parsed.args$filename,colorchoicediff=parsed.args$colorchoicediff,BINLIMIT=parsed.args$BINLIMIT,diffbartype=parsed.args$diffbartype,use_fixed_scale=parsed.args$use_fixed_scale,fixed_scale = parsed.args$fixed_scale)

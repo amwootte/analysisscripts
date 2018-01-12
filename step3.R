@@ -2,7 +2,7 @@
 # Step 3 analysis 3^5
 #
 
-step3 = function(step1_filename,projnotes,colorchoicediff,BINLIMIT,diffbartype){
+step3 = function(step1_filename,projnotes,colorchoicediff,BINLIMIT,diffbartype,use_fixed_scale,fixed_scale){
 
 # must pass in the following: step1_filename ,projnotes
 # colorchoicediff, BINLIMIT, diffbartype
@@ -43,7 +43,7 @@ names(projfilebreakdown) = c("GCM","DS","obs","scen")
 
 if(all(lon>0)) lon =lon-360
 
-diffcolorbar = colorramp(diffs,colorchoice=colorchoicediff,Blimit=BINLIMIT,type=diffbartype,use_fixed_scale = FALSE)
+diffcolorbar = colorramp(diffs,colorchoice=colorchoicediff,Blimit=BINLIMIT,type=diffbartype,use_fixed_scale = use_fixed_scale,fixed_scale=fixed_scale)
 
 diffs_sort = diffs[,,order(projfilebreakdown$scen)]
 projfilebreakdown = projfilebreakdown[order(projfilebreakdown$scen),]
@@ -130,7 +130,7 @@ arg.len <- length(args)
 
 parsed.args <- ParseArgs(args)
 
-step3(step1_filename=parsed.args$filename,projnotes = parsed.args$projnotes,colorchoicediff=parsed.args$colorchoicediff,BINLIMIT=parsed.args$BINLIMIT,diffbartype=parsed.args$diffbartype)
+step3(step1_filename=parsed.args$filename,projnotes = parsed.args$projnotes,colorchoicediff=parsed.args$colorchoicediff,BINLIMIT=parsed.args$BINLIMIT,diffbartype=parsed.args$diffbartype,use_fixed_scale=parsed.args$use_fixed_scale,fixed_scale=parsed.args$fixed_scale)
 
 
 
