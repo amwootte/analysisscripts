@@ -15,6 +15,7 @@ step7 = function(step1_filename,histnotes,projnotes,loc_name,loc_lon,loc_lat){
   varname = split2[1]
   futureperiod = c(as.numeric(substr(split2[4],1,4)),as.numeric(substr(split2[4],6,9)))
   difftype = split2[3]
+  seasonin = substr(split2[5],1,3)
   
 test = nc_open(step1_filename)
 lon = ncvar_get(test,"lon")
@@ -88,7 +89,7 @@ for(i in 1:nrow(projchangedat)){
 ####
 # Write out file
 
-filename = paste("/data2/3to5/I35/point_output/",varname,"_",loc_name,"_",difftype,"_",futureperiod[1],"-",futureperiod[2],".csv",sep="")
+filename = paste("/data2/3to5/I35/point_output/",varname,"_",loc_name,"_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".csv",sep="")
 write.table(projchangedat,file=filename,row.names=FALSE,sep=",")
 
 }

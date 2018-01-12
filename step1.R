@@ -2,7 +2,7 @@
 # Step 1 analysis 3^5
 #
 
-step1 = function(varname,histfilelist,projfilelist,appfunc,difftype,varunits,changeunits,futureperiod,TC,TH,cond){
+step1 = function(varname,histfilelist,projfilelist,appfunc,difftype,varunits,changeunits,futureperiod,TC,TH,cond,seasonin){
 
 # must pass in the following: histfilelist,histfilebreakdown, projfilelist,projfilebreakdown,TC,TH,cond, appfunc, varname, futureperiod,tempperiod,varunits,changeunits,usecompound
 # if usecompound==TRUE, histfilelist and projfilelist will be a list also.
@@ -68,7 +68,11 @@ for(i in 1:length(histfilelist)){
   if(noleap==FALSE) datesin = dates
   if(noleap==TRUE) datesin = dates[-which(substr(dates,6,10)=="02-29")]
   
-  yearlyoutput = netcdftoyearlycalcs(histfilelist[i],varname=varin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(1981,2005),datesdataperiod=datesin,appliedfunction=appfunc)
+  if(seasonin=="ann"){
+    yearlyoutput = netcdftoyearlycalcs(histfilelist[i],varname=varin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(1981,2005),datesdataperiod=datesin,appliedfunction=appfunc)
+  } else {
+    yearlyoutput = netcdftoseasonalcalcs(histfilelist[i],varname=varin,season=seasonin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(1981,2005),datesdataperiod=datesin,appliedfunction=appfunc)
+  }
   
   if(i==1){
     lon = yearlyoutput[[1]]
@@ -99,7 +103,11 @@ for(i in 1:length(projfilelist)){
   if(noleap==FALSE) datesin = dates
   if(noleap==TRUE) datesin = dates[-which(substr(dates,6,10)=="02-29")]
   
-  yearlyoutput = netcdftoyearlycalcs(projfilelist[i],varname=varin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=futureperiod,datesdataperiod=datesin,appliedfunction=appfunc)
+  if(seasonin=="ann"){
+    yearlyoutput = netcdftoyearlycalcs(projfilelist[i],varname=varin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=futureperiod,datesdataperiod=datesin,appliedfunction=appfunc)
+  } else {
+    yearlyoutput = netcdftoseasonalcalcs(projfilelist[i],varname=varin,season=seasonin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(2041,2070),datesdataperiod=datesin,appliedfunction=appfunc)
+  }
   
   if(i==1){
     projlist = array(NA,dim=c(length(lon),length(lat),length(projfilelist)))
@@ -131,7 +139,7 @@ histnotes = paste(histfilebreakdown$GCM,histfilebreakdown$DS,histfilebreakdown$o
 
 # 1-d Write out netcdf files
 
-step1_filename = paste(varname,"_allmem_",difftype,"_",futureperiod[1],"-",futureperiod[2],".nc",sep="")
+step1_filename = paste(varname,"_allmem_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".nc",sep="")
 
 dimX <- ncdim_def( "lon", "degrees_east", lon)
 dimY <- ncdim_def( "lat", "degrees_north", lat)
@@ -222,7 +230,10 @@ ParseArgs <- function(arg.list){
     make_option(c("-c","--condition"), action="store", default='na',dest='cond',
                 help=paste("The condition that determines how the threshold will", 
                            "be applied to the input data. May be one of LT, LE,", 
-                           "GT, GE"))
+                           "GT, GE")),
+    make_option(c("-S","--season"), action="store", default='ann',dest='seasonin',
+                help=paste("The season to use for calculations. Defaults to 'ann', ", 
+                           "but can also be DJF, MAM, JJA, SON."))
   )
   
   description = paste('Given the desired variable name, the list of files (with paths) ', 
@@ -232,9 +243,9 @@ ParseArgs <- function(arg.list){
   epilouge = paste("Please note: flags may be specified in any order, and '='", 
                    "not required to specify strings.")
   usage = paste("usage: %prog --var varname --histlist histlist --projlist projlist ", 
-                "[-]", 
-                "--threshold threshold -O out_base --eps eps [--units units] --spell-length", 
-                "[--verbose] [-h --help]")
+                "[-a appfunc] [-d difftype] [-u varunits] [-x changeunits] [-f futureperiod]", 
+                "[-T calcthres] [-H thresvalue] [-c condition] [-S seasonin]", 
+                " [-h --help]")
   return(parse_args(OptionParser(option_list=option_list, usage=usage, 
                                  description = description, epilogue=epilouge), 
                     args=arg.list))
@@ -250,5 +261,5 @@ parsed.args <- ParseArgs(args)
 step1(varname=parsed.args$varname,histfilelist=parsed.args$histlist,projfilelist=parsed.args$projlist,
       appfunc=parsed.args$appfunc,difftype=parsed.args$difftype,varunits=parsed.args$varunits,
       changeunits=parsed.args$changeunits,futureperiod=parsed.args$futureperiod,TC=parsed.args$TC,
-      TH=parsed.args$TH,cond=parsed.args$cond)
+      TH=parsed.args$TH,cond=parsed.args$cond,seasonin=parsed.args$seasonin)
 

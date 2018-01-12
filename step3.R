@@ -20,6 +20,7 @@ split2 = strsplit(split1[length(split1)],"_",fixed=TRUE)[[1]]
 varname = split2[1]
 futureperiod = c(as.numeric(substr(split2[4],1,4)),as.numeric(substr(split2[4],6,9)))
 difftype = split2[3]
+seasonin = substr(split2[5],1,3)
 ###
 
 test = nc_open(step1_filename)
@@ -47,7 +48,7 @@ diffcolorbar = colorramp(diffs,colorchoice=colorchoicediff,Blimit=BINLIMIT,type=
 diffs_sort = diffs[,,order(projfilebreakdown$scen)]
 projfilebreakdown = projfilebreakdown[order(projfilebreakdown$scen),]
 
-plotfilename = paste("/data2/3to5/I35/plots/all_mems/IndividualMembers_",varname,"_",futureperiod[1],"-",futureperiod[2],"_",difftype,"_change.pdf",sep="")
+plotfilename = paste("/data2/3to5/I35/plots/all_mems/IndividualMembers_",varname,"_",futureperiod[1],"-",futureperiod[2],"_",difftype,"_",seasonin,"_change.pdf",sep="")
 
 pdf(plotfilename,onefile=TRUE,width=10,height=10)
 par(mfrow=c(3,3))
@@ -100,15 +101,23 @@ ParseArgs <- function(arg.list){
                            "This includes the following options: difference (default), raw, or ratio.")),
     make_option(c("-b", "--bin_limit"), action="store", default=30,
                 dest='BINLIMIT',
-                help=paste("Maximum number of bins allowed in the colorbar. Defaults to 30."))
-    
+                help=paste("Maximum number of bins allowed in the colorbar. Defaults to 30.")),
+    make_option(c("-x","--use_fixed_scale"), action="store", default=FALSE,dest='use_fixed_scale',
+                help=paste("Should there be a fixed scale used?", 
+                           "Defaults to FALSE (dynamic scale based on input data). ",
+                           "Will throw an error if --use_fixed_scale is TRUE, ",
+                           "and no fixed scale is provided.")),
+    make_option(c("-g","--fixed_scale"), action="store", default='-100,100',dest='fixed_scale',
+                help=paste("Fixed scale for plotting, listed as two comma separated values min and max (-g -100,100). ", 
+                           "Will throw an error if --use_fixed_scale is TRUE, ",
+                           "and no fixed scale is provided."))
   )
   
   description = paste('Given the filename from step1.R and the metadata list for individual members ', 
                       "this will produce the multi-panel plot of the individual members by emissions scenarios.")
   epilouge = paste("Please note: flags may be specified in any order, and '='", 
                    "not required to specify strings.")
-  usage = paste("usage: %prog --input filename --projnotes projnotes -c color_choice -d difftype -b BINLIMIT")
+  usage = paste("usage: %prog --input filename --projnotes projnotes -c color_choice -d difftype -b BINLIMIT  -x use_fixed_scale -g fixed_scale")
   return(parse_args(OptionParser(option_list=option_list, usage=usage, 
                                  description = description, epilogue=epilouge), 
                     args=arg.list))

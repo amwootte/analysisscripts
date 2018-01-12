@@ -12,6 +12,7 @@ step5 = function(step2_filename,outfiletype){
   varname = split2[1]
   futureperiod = c(as.numeric(substr(split2[4],1,4)),as.numeric(substr(split2[4],6,9)))
   difftype = split2[3]
+  seasonin = substr(split2[5],1,3)
   
 test = nc_open(step2_filename)
 projdiff_rcp26= ncvar_get(test,"projmeandiff_rcp26")
@@ -30,7 +31,7 @@ if(all(lon>0)) {
   extent(dataras) = c(lon[1],lon[length(lon)],lat[1],lat[length(lat)])
 }
 crs(dataras) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-rf <- writeRaster(dataras, filename=paste("/data2/3to5/I35/GeoTIFFs/",varname,"_rcp26_meanchange_",difftype,"_",futureperiod[1],"-",futureperiod[2],".tif",sep=""), format="GTiff", overwrite=TRUE)
+rf <- writeRaster(dataras, filename=paste("/data2/3to5/I35/GeoTIFFs/",varname,"_rcp26_meanchange_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".tif",sep=""), format="GTiff", overwrite=TRUE)
 
 dataras = raster(t(projdiff_rcp45[,length(lat):1]))
 if(all(lon>0)) {
@@ -39,7 +40,7 @@ if(all(lon>0)) {
   extent(dataras) = c(lon[1],lon[length(lon)],lat[1],lat[length(lat)])
 }
 crs(dataras) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-rf <- writeRaster(dataras, filename=paste("/data2/3to5/I35/GeoTIFFs/",varname,"_rcp45_meanchange_",difftype,"_",futureperiod[1],"-",futureperiod[2],".tif",sep=""), format="GTiff", overwrite=TRUE)
+rf <- writeRaster(dataras, filename=paste("/data2/3to5/I35/GeoTIFFs/",varname,"_rcp45_meanchange_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".tif",sep=""), format="GTiff", overwrite=TRUE)
 
 dataras = raster(t(projdiff_rcp85[,length(lat):1]))
 if(all(lon>0)) {
@@ -48,7 +49,7 @@ if(all(lon>0)) {
   extent(dataras) = c(lon[1],lon[length(lon)],lat[1],lat[length(lat)])
 }
 crs(dataras) <- "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
-rf <- writeRaster(dataras, filename=paste("/data2/3to5/I35/GeoTIFFs/",varname,"_rcp85_meanchange_",difftype,"_",futureperiod[1],"-",futureperiod[2],".tif",sep=""), format="GTiff", overwrite=TRUE)
+rf <- writeRaster(dataras, filename=paste("/data2/3to5/I35/GeoTIFFs/",varname,"_rcp85_meanchange_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".tif",sep=""), format="GTiff", overwrite=TRUE)
 
 }
 

@@ -58,17 +58,17 @@ library(sp)
 source("analysisfunctions.R")
 
 # set arguments
-varname = "pr25" # these are all required arguments for step 1
-steps = c(1:7) # others can be set based upon what varname is.
-appfunc = "sum"
+varname = "tasmax" # these are all required arguments for step 1
+steps = c(1:2) # others can be set based upon what varname is.
 difftype = "absolute"
 tempperiod = "annual"
 futureperiod = c(2071,2099)
-varunits = "Number_of_Days"
-changeunits = "Number_of_Days"
+varunits = "degrees_K"
+changeunits = "degrees_K"
 BINLIMIT=30
-colorchoicediff = "browntogreen"
+colorchoicediff = "bluetored"
 diffbartype = "difference"
+seasonin = "MAM"
 
 step1_filename = NA # if these are NA and you are not running step1 or step2, then other options that rely on these will break
 step2_filename = NA
@@ -107,6 +107,21 @@ TC = FALSE
 TH = NA
 cond=NA
 
+if(varname == "tasmax"){
+  TC=FALSE
+  appfunc = "mean"
+   usecompound=FALSE
+   }
+if(varname == "tasmin"){
+  TC=FALSE
+  appfunc = "mean"
+   usecompound=FALSE
+}
+if(varname == "pr"){
+  TC=FALSE
+  appfunc = "sum"
+   usecompound=FALSE
+}
 if(varname == "heatwaves"){
   TC=FALSE
   usecompound=TRUE
@@ -188,6 +203,16 @@ if(varname == "rx5day"){
   appfunc = "rx5day"
   usecompound=FALSE
 }
+if(varname == "cdd"){
+  TC=FALSE
+  appfunc = "maxdryspell"
+   usecompound=FALSE
+}
+if(varname == "cwd"){
+  TC=FALSE
+  appfunc = "maxwetspell"
+   usecompound=FALSE
+}
 
 ########
 # Find all file names
@@ -229,10 +254,10 @@ projlist = paste(projfilelist,collapse=",")
 
 if(1 %in% steps){
   # run individual calc
-  if(TC==FALSE) command = paste("Rscript step1.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2],sep="")
-  if(TC==TRUE) command = paste("Rscript step1.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -T ",TC," -H ",TH," -c ",cond,sep="")
+  if(TC==FALSE) command = paste("Rscript step1.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -S ",seasonin,sep="")
+  if(TC==TRUE) command = paste("Rscript step1.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin,sep="")
   system(command,intern=TRUE)
-  step1_filename = paste("/data2/3to5/I35/all_mems/",varname,"_allmem_",difftype,"_",futureperiod[1],"-",futureperiod[2],".nc",sep="")
+  step1_filename = paste("/data2/3to5/I35/all_mems/",varname,"_allmem_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".nc",sep="")
 }
 
 ########
@@ -241,7 +266,7 @@ if(2 %in% steps){
   # run ensemble mean calcs
   command = paste("Rscript step2.R -i ",step1_filename," -p ",paste(projnotes,collapse=","),sep="")
   system(command,intern=TRUE)
-  step2_filename = paste("/data2/3to5/I35/ens_means/",varname,"_ensmean_",difftype,"_",futureperiod[1],"-",futureperiod[2],".nc",sep="")
+  step2_filename = paste("/data2/3to5/I35/ens_means/",varname,"_ensmean_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".nc",sep="")
 }
 
 ########

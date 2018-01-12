@@ -16,6 +16,7 @@ split2 = strsplit(split1[length(split1)],"_",fixed=TRUE)[[1]]
 varname = split2[1]
 futureperiod = c(as.numeric(substr(split2[4],1,4)),as.numeric(substr(split2[4],6,9)))
 difftype = split2[3]
+seasonin = substr(split2[5],1,3)
 ###
 
 test = nc_open(step1_filename)
@@ -51,7 +52,7 @@ for(s in 1:length(scens)){
 ######
 # Create Ensemble means netcdf
 
-step2_filename = paste("/data2/3to5/I35/ens_means/",varname,"_ensmean_",difftype,"_",futureperiod[1],"-",futureperiod[2],".nc",sep="")
+step2_filename = paste("/data2/3to5/I35/ens_means/",varname,"_ensmean_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".nc",sep="")
 
 dimX <- ncdim_def( "lon", "degrees_east", lon)
 dimY <- ncdim_def( "lat", "degrees_north", lat)
