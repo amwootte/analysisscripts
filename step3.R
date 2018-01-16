@@ -43,6 +43,17 @@ names(projfilebreakdown) = c("GCM","DS","obs","scen")
 
 if(all(lon>0)) lon =lon-360
 
+if(use_fixed_scale==TRUE){
+  print(fixed_scale)
+  fixed_scale = do.call("c",strsplit(fixed_scale,",",fixed=TRUE))
+  print(fixed_scale)
+  if(1 %in% grep("n",fixed_scale)) fixed_scale[1] =  paste("-",substr(fixed_scale[1],2,nchar(fixed_scale[1])),sep="")
+  if(2 %in% grep("n",fixed_scale)) fixed_scale[2] =  paste("-",substr(fixed_scale[2],2,nchar(fixed_scale[2])),sep="")
+  print(fixed_scale)
+  fixed_scale=as.numeric(fixed_scale)
+  print(fixed_scale)
+}
+
 diffcolorbar = colorramp(diffs,colorchoice=colorchoicediff,Blimit=BINLIMIT,type=diffbartype,use_fixed_scale = use_fixed_scale,fixed_scale=fixed_scale)
 
 diffs_sort = diffs[,,order(projfilebreakdown$scen)]

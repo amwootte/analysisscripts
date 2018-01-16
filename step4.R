@@ -27,11 +27,20 @@ nc_close(test)
 
 ####
 if(all(lon>0)) lon =lon-360
-
+if(use_fixed_scale==TRUE){
+  print(fixed_scale)
+  fixed_scale = do.call("c",strsplit(fixed_scale,",",fixed=TRUE))
+  print(fixed_scale)
+  if(1 %in% grep("n",fixed_scale)) fixed_scale[1] =  paste("-",substr(fixed_scale[1],2,nchar(fixed_scale[1])),sep="")
+  if(2 %in% grep("n",fixed_scale)) fixed_scale[2] =  paste("-",substr(fixed_scale[2],2,nchar(fixed_scale[2])),sep="")
+  print(fixed_scale)
+  fixed_scale=as.numeric(fixed_scale)
+  print(fixed_scale)
+}
 plotfilename = paste("/data2/3to5/I35/plots/ens_means/EnsMean_",varname,"_",futureperiod[1],"-",futureperiod[2],"_",difftype,"_",seasonin,"_change.pdf",sep="") 
 
 pdf(plotfilename,onefile=TRUE,width=10,height=5)
-diffcolorbar = diff_colorramp(c(rcp26dat,rcp45dat,rcp85dat),colorchoice=colorchoicediff,Blimit=BINLIMIT,use_fixed_scale = use_fixed_scale,fixed_scale=fixed_scale)
+diffcolorbar = colorramp(c(rcp26dat,rcp45dat,rcp85dat),colorchoice=colorchoicediff,Blimit=BINLIMIT,use_fixed_scale = use_fixed_scale,fixed_scale=fixed_scale)
 
 par(mfrow=c(1,2))
 
