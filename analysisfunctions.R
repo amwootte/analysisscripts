@@ -2,7 +2,7 @@
 #
 # Analysis functions
 
-source("/home/woot0002/climdex.R")
+source("/home/woot0002/scripts/climdex.R")
 
 ####
 
@@ -12,6 +12,105 @@ distfunc = function(lon,lat,modelgrid){
   minidx = which(dist==min(dist,na.rm=TRUE))
   modelgrid[minidx,]
 }
+
+####
+
+netcdfcombocalcs = function(filename,varname="tasmax",dimnames=c("lon","lat","time"),yearlydataperiod=c(1981,2005),datesdataperiod=seq(as.Date("1981-01-01"),as.Date("2005-12-31"),by="day"),combofunction="growing_season_length"){
+                            
+  file1 = filename
+  #message(file1)
+  #message(varname)
+                            
+  if(varname=="tasmax"){
+    message("tasmax provided, figuring out correct tasmin file")
+    filesplit = do.call("c",strsplit(file1,"/",fixed=TRUE))
+    nameend = substr(filesplit[length(filesplit)],nchar(varname)+1,nchar(filesplit[length(filesplit)]))
+    #print(nameend)
+    file2 = paste("/",filesplit[2],"/",filesplit[3],"/",filesplit[4],"/tasmin/",filesplit[6],"/tasmin",nameend,sep="")
+    file2split = do.call("c",strsplit(file2,"txp",fixed=TRUE))
+    file2 = paste(file2split[1],"tnp",file2split[2],sep="")
+    message("file 1 is tasmax, file 2 is tasmin")
+  }
+                            
+  if(varname=="tasmin"){
+    filesplit = do.call("c",strsplit(file1,"/",fixed=TRUE))
+    nameend = substr(filesplit[length(filesplit)],nchar(varname)+1,nchar(filesplit[length(filesplit)]))
+    file2 = paste("/",filesplit[2],"/",filesplit[3],"/",filesplit[4],"/tasmax/",filesplit[6],"/tasmax",nameend,sep="")
+    file2split = do.call("c",strsplit(file2,"tnp",fixed=TRUE))
+    file2 = paste(file2split[1],"txp",file2split[2],sep="")
+    message("file 1 is tasmin, file 2 is tasmax, switching the order")
+    tmpfile1 = file2
+    tmpfile2 = file1
+    file1 = tmpfile1
+    file2 = tmpfile2
+    message("Switch complete")
+  }
+                            
+  if(combofunction=="heatwaves"){
+    splitname = do.call("c",strsplit(nameend,"_",fixed=TRUE))
+    nameuse = paste(substr(splitname[3],9,15),"0",substr(splitname[3],17,nchar(splitname[3])),"_historical_",splitname[5],"_",splitname[6],"_19810101-20051231",sep="")
+    q95list = system("ls /data2/3to5/I35/q95/*",intern=TRUE)
+    idx = grep(nameuse,q95list)
+    file3 = q95list[idx[1]] # tasmax historical q95
+    file4 = q95list[idx[2]] # tasmin historical q95
+  }
+                            
+  years = yearlydataperiod[1]:yearlydataperiod[2]
+                            
+  dates = datesdataperiod
+                            
+  for(y in 1:length(years)){
+    yearidx = which(as.numeric(substr(dates,1,4))==years[y])
+                            
+    test = nc_open(file1) # should always be tasmax file
+    tempdata1 = ncvar_get(test,"tasmax",start=c(1,1,yearidx[1]),count=c(-1,-1,length(yearidx)))
+                            
+    if(y==1){
+      yearlydat = array(NA,dim=c(dim(tempdata1)[1],dim(tempdata1)[2],length(years)))
+      lat = ncvar_get(test,dimnames[2])
+      lon = ncvar_get(test,dimnames[1])
+      times = ncvar_get(test,dimnames[3])
+      domainmask = ifelse(is.na(tempdata1[,,1])==FALSE,1,0)
+      startdate = substr(test$dim[[4]]$units,12,21)
+    }
+    nc_close(test)
+                            
+    test = nc_open(file2)
+    tempdata2 = ncvar_get(test,"tasmin",start=c(1,1,yearidx[1]),count=c(-1,-1,length(yearidx)))
+    nc_close(test)
+                            
+    if(combofunction=="growing_season_length") {
+      for(r in 1:length(lon)){
+        for(c in 1:length(lat)){
+          yearlydat[r,c,y] = GSLcalc(tempdata1[r,c,],tempdata2[r,c,],inputtimes=times[yearidx],startdate=startdate)
+          #message("Finished Calculation R ",r," and C ",c)
+        }
+      }
+      yearlydat[,,y] = ifelse(domainmask==1,yearlydat[,,y],NA)
+    }
+    if(combofunction=="heatwaves"){
+      test = nc_open(file3)
+      q95tmax = ncvar_get(test,"tmaxq95",start=c(1,1),count=c(-1,-1))
+      nc_close(test)
+      test = nc_open(file4)
+      q95tmin = ncvar_get(test,"tminq95",start=c(1,1),count=c(-1,-1))
+      nc_close(test)
+                            
+      for(r in 1:length(lon)){
+        for(c in 1:length(lat)){
+          yearlydat[r,c,y] = heatwave.calc(tempdata1[r,c,],tempdata2[r,c,],q95tmax[r,c],q95tmin[r,c])
+          #message("Calcs complete for r ",r," and c ",c)
+        }
+      }
+      yearlydat[,,y] = ifelse(domainmask==1,yearlydat[,,y],NA)
+    }
+  rm(tempdata1)
+  rm(tempdata2)
+  message("Finished Calcs for year ",years[y])
+  }
+list(lon,lat,yearlydat)
+}
+                            
 
 ####
 

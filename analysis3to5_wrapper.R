@@ -58,17 +58,17 @@ library(sp)
 source("analysisfunctions.R")
 
 # set arguments
-varname = "tasmax" # these are all required arguments for step 1
-steps = c(1:2) # others can be set based upon what varname is.
+varname = "gsl" # these are all required arguments for step 1
+steps = c(1:7) # others can be set based upon what varname is.
 difftype = "absolute"
 tempperiod = "annual"
 futureperiod = c(2071,2099)
-varunits = "degrees_K"
-changeunits = "degrees_K"
+varunits = "days"
+changeunits = "days"
 BINLIMIT=30
 colorchoicediff = "bluetored"
 diffbartype = "difference"
-seasonin = "MAM"
+seasonin = "ann"
 
 step1_filename = NA # if these are NA and you are not running step1 or step2, then other options that rely on these will break
 step2_filename = NA
@@ -110,35 +110,34 @@ cond=NA
 if(varname == "tasmax"){
   TC=FALSE
   appfunc = "mean"
-   usecompound=FALSE
-   }
+}
+
 if(varname == "tasmin"){
   TC=FALSE
   appfunc = "mean"
-   usecompound=FALSE
 }
+
 if(varname == "pr"){
   TC=FALSE
   appfunc = "sum"
-   usecompound=FALSE
 }
+
 if(varname == "heatwaves"){
   TC=FALSE
-  usecompound=TRUE
   appfunc = "heatwaves"
+  varin = "tasmax"
 }
 
 if(varname == "gsl"){
   TC=FALSE
-  usecompound=TRUE
   appfunc = "growing_season_length"
+  varin = "tasmax"
 }
 
 if(varname == "tmax95"){
   TC=TRUE
   TH = 308.15
   cond = "gte"
-  usecompound=FALSE
   appfunc = "sum"
 }
 
@@ -146,7 +145,6 @@ if(varname == "tmax100"){
   TC=TRUE
   TH = 310.98
   cond = "gte"
-  usecompound=FALSE
   appfunc = "sum"
 }
 
@@ -154,7 +152,6 @@ if(varname == "tmin32"){
   TC=TRUE
   TH = 273.15
   cond = "lte"
-  usecompound=FALSE
   appfunc = "sum"
 }
 
@@ -163,13 +160,11 @@ if(varname == "tmin28"){
   TH = 270.928
   cond = "lte"
   appfunc = "sum"
-  usecompound=FALSE
 }
 
 if(varname == "frd"){
   TC=FALSE
   appfunc = "lastfreeze"
-  usecompound=FALSE
 }
 
 if(varname == "mdrn"){
@@ -177,41 +172,40 @@ if(varname == "mdrn"){
   TH = 0.254
   cond = "gte"
   appfunc = "sum"
-  usecompound=FALSE
 }
+
 if(varname == "pr25"){
   TC=TRUE
   TH = 25.4
   cond = "gte"
   appfunc = "sum"
-  usecompound=FALSE
 }
+
 if(varname == "pr50"){
   TC=TRUE
   TH = 50.8
   cond = "gte"
   appfunc = "sum"
-  usecompound=FALSE
 }
+
 if(varname == "rx1day"){
   TC=FALSE
   appfunc = "max"
-  usecompound=FALSE
 }
+
 if(varname == "rx5day"){
   TC=FALSE
   appfunc = "rx5day"
-  usecompound=FALSE
 }
+
 if(varname == "cdd"){
   TC=FALSE
   appfunc = "maxdryspell"
-   usecompound=FALSE
 }
+
 if(varname == "cwd"){
   TC=FALSE
   appfunc = "maxwetspell"
-   usecompound=FALSE
 }
 
 ########

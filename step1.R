@@ -29,6 +29,12 @@ step1 = function(varname,histfilelist,projfilelist,appfunc,difftype,varunits,cha
   if(varname=="tmax95" | varname=="tmax100") varin="tasmax" # for the tmax95 and other threshold variables, you need to use the base variable and calculate the number of days matching the threshold.
   if(varname=="tmin32" | varname=="tmin28" | varname=="frd") varin="tasmin"
   if(varname=="pr25" | varname=="pr50" | varname=="mdrn" | varname=="rx1day" | varname=="rx5day" | varname=="cdd" | varname=="cwd") varin="pr"
+  
+  if(varname=="heatwaves" | varname=="gsl"){
+    if(length(grep("tasmax",projfilelist))==length(projfilelist)) varin="tasmax"
+    if(length(grep("tasmin",projfilelist))==length(projfilelist)) varin="tasmin"
+  }
+  
    
   # Creating file breakdown tables
 filebreakdown = do.call(rbind,strsplit(projfilelist,"_",fixed=TRUE))
@@ -68,11 +74,20 @@ for(i in 1:length(histfilelist)){
   if(noleap==FALSE) datesin = dates
   if(noleap==TRUE) datesin = dates[-which(substr(dates,6,10)=="02-29")]
   
+  if(appfunc!="heatwaves" & appfunc!="growing_season_length"){
   if(seasonin=="ann"){
     yearlyoutput = netcdftoyearlycalcs(histfilelist[i],varname=varin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(1981,2005),datesdataperiod=datesin,appliedfunction=appfunc)
   } else {
     yearlyoutput = netcdftoseasonalcalcs(histfilelist[i],varname=varin,season=seasonin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(1981,2005),datesdataperiod=datesin,appliedfunction=appfunc)
   }
+  }
+  
+  if(appfunc=="growing_season_length" | appfunc=="heatwaves"){
+    message("Running compound calculation, please be patient")
+    yearlyoutput = netcdfcombocalcs(histfilelist[i],varname=varin,dimnames=c("lon","lat","time"),yearlydataperiod=c(1981,2005),datesdataperiod=datesin,combofunction=appfunc)
+  }
+  
+  
   
   if(i==1){
     lon = yearlyoutput[[1]]
@@ -103,11 +118,19 @@ for(i in 1:length(projfilelist)){
   if(noleap==FALSE) datesin = dates
   if(noleap==TRUE) datesin = dates[-which(substr(dates,6,10)=="02-29")]
   
+  if(appfunc!="heatwaves" & appfunc!="growing_season_length"){
   if(seasonin=="ann"){
     yearlyoutput = netcdftoyearlycalcs(projfilelist[i],varname=varin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=futureperiod,datesdataperiod=datesin,appliedfunction=appfunc)
   } else {
     yearlyoutput = netcdftoseasonalcalcs(projfilelist[i],varname=varin,season=seasonin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(2041,2070),datesdataperiod=datesin,appliedfunction=appfunc)
   }
+  }
+  
+  if(appfunc=="growing_season_length" | appfunc=="heatwaves"){
+    yearlyoutput = netcdfcombocalcs(projfilelist[i],varname=varin,dimnames=c("lon","lat","time"),yearlydataperiod=futureperiod,datesdataperiod=datesin,combofunction=appfunc)
+  }
+  
+  
   
   if(i==1){
     projlist = array(NA,dim=c(length(lon),length(lat),length(projfilelist)))
@@ -175,7 +198,7 @@ return(returnlist)
 # Argument parser
 
 library(optparse)
-source("analysisfunctions.R")
+source("/home/woot0002/scripts/analysisfunctions.R")
 library(ncdf4)
 library(maps)
 library(fields)
