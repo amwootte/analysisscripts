@@ -667,13 +667,31 @@ obs_colorramp = function(obs,colorchoice,Blimit){
 
 colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_scale = FALSE, fixed_scale=c(-100,100)){
   
+  #inputdata=diffyearmon
+  #colorchoice="bluetored"
+  #Blimit = 30
+  #type="difference"
+  #use_fixed_scale = FALSE
+  
   if(use_fixed_scale==FALSE){
     message("Not using a fixed scale")
     datarange = range(inputdata,na.rm=TRUE)
-    datarange[1]=floor(datarange[1])
-    if(datarange[1] %% 2 != 0) datarange[1]=datarange[1]-1
-    datarange[2]=ceiling(datarange[2])
-    if(datarange[2] %% 2 != 0) datarange[2]=datarange[2]+1
+    if(all(abs(datarange)<1)==TRUE){
+      i=1
+      while(all(abs(datarange)<1)==TRUE){
+        datarange=datarange*(10*i)
+        
+        if(all(abs(datarange)<1)==TRUE) i=i+1
+        if(all(abs(datarange)<1)==FALSE) break;
+      }
+      datarange[1]=floor(datarange[1])/(10*i)
+      datarange[2]=ceiling(datarange[2])/(10*i)
+    } else {
+      datarange[1]=floor(datarange[1])
+      if(datarange[1] %% 2 != 0) datarange[1]=datarange[1]-1
+      datarange[2]=ceiling(datarange[2])
+      if(datarange[2] %% 2 != 0) datarange[2]=datarange[2]+1
+    }
   } else {
     message("Using a fixed scale")
     #tmp = strsplit(fixed_scale,",")
@@ -688,19 +706,19 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
   if(type=="raw"){centerpoint=datarange[1]; startpoint=datarange[1]; message("type=raw")}
   
   breakcheck = 1
-  breaklist = c(0.01,0.02,0.025,0.05,0.1,0.2,0.25,0.3,0.5,1,2,3,4,5,10,20,25,30,50,100,200,250,300,500,1000)
+  breaklist = c(0.0001,0.0002,0.00025,0.0005,0.001,0.002,0.0025,0.005,0.01,0.02,0.025,0.05,0.1,0.2,0.25,0.3,0.5,1,2,3,4,5,10,20,25,30,50,100,200,250,300,500,1000)
   
   actualbins = diff(datarange)/breaklist
   actidx = which(actualbins<Blimit)
   dataact = actualbins[actidx]-floor(actualbins[actidx])
   
-  if(any(dataact==0)==TRUE){
+  if(any(dataact<=1E-14)==TRUE){
     message("exact match for bins")
-    dataidx = which(dataact==0)
+    dataidx = which(dataact<=1E-14)
     breakcheck=actidx[dataidx[1]]
   } else {
     message("no exact match going through while loop")
-    checkpoint = any(dataact==0)
+    checkpoint = any(dataact<=1E-14)
     counter=1
     while(checkpoint==FALSE){
       datarange[1] = floor(datarange[1]/(10^counter))*10^counter
