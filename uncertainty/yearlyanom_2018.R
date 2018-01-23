@@ -18,8 +18,8 @@
 # Arguments set
 
 datasetname = "I35" # common name of dataset to start with
-varin = "tasmax" # common name of variable
-
+varname = "tasmax" # common name of variable
+varin=varname
 ###
 # load libraries and master list files
 library(ncdf4)
@@ -173,7 +173,8 @@ if(datasetname=="cl10") lon = lon-360
 #############
 # Combine the historical and future files for each GCM / scenario combination
 
-GCMs = subset(GCMnamelist,is.na(GCMnamelist[,which(names(GCMnamelist)==datasetname)])==FALSE)[,which(names(GCMnamelist)==datasetname)]
+#GCMs = subset(GCMnamelist,is.na(GCMnamelist[,which(names(GCMnamelist)==datasetname)])==FALSE)[,which(names(GCMnamelist)==datasetname)]
+GCMs = c("A1","A2","A3")
 yearshist = 1981:2005
 yearsfuture = 2006:2099
 yearsfull = c(yearshist,yearsfuture)
@@ -190,41 +191,46 @@ if(datasetname =="maca" & g==17) GCMidx = GCMidx[4:6]
 if(datasetname =="cmip5.bcca" & g==16) GCMidx = GCMidx[6:10]
 if(datasetname =="ccr" & GCMs[g]=="cccma_cgcm3_1") GCMidx = GCMidx[-grep("cccma_cgcm3_1_t63",files[grep(GCMs[g],files)])]
 
-if(datasetname!="regcm"){
-if(datasetname!="dcp" & datasetname!="ccr"){
-histidx = GCMidx[1]
-futureidx = GCMidx[-1]
-} else {
-if(datasetname=="dcp"){
-histidx = GCMidx[grep("hist",files[GCMidx])]
-futureidx = GCMidx[-grep("hist",files[GCMidx])]
-}
-if(datasetname=="ccr"){
-histidx = GCMidx[grep("twentyc3m",files[GCMidx])]
-futureidx = GCMidx[-grep("twentyc3m",files[GCMidx])]
-}
-}
+if(datasetname=="I35"){
+  histidx = GCMidx[grep("historical",files[GCMidx])]
+  futureidx = GCMidx[-grep("historical",files[GCMidx])]
 }
 
 filesused = files[GCMidx]
 yearsused = yearlist[GCMidx]
 
 if(g==1) counter=1
-
-if(datasetname!="regcm"){
-
 for(i in 1:length(futureidx)){
-
-outarray = array(NA,dim=c(length(lon),length(lat),length(yearsfull))) # combine historical and future data
+  outarray = array(NA,dim=c(length(lon),length(lat),length(yearsfull))) # combine historical and future data
+  
+if(datasetname!="I35"){
 outarray[,,which(yearsfull %in% yearlist[[histidx]]) ] = outputdata[[histidx]]
 if(datasetname!="cmip5.bcca"){
 outarray[,,which(yearsfull %in% yearlist[[futureidx[i]]]) ] = outputdata[[futureidx[i]]]
 } else {
 outarray[,,which(yearsfull %in% yearsfuture) ] = outputdata[[futureidx[i]]][,,(which(yearsfull %in% yearsfuture)-56)] # cmip5.bcca has 2100, which the other datasets do not have.
 }
-
 outputdata2[[counter]] = outarray
+} else {
 
+  splitname = strsplit(files[futureidx[i]],GCMs[g],fixed=TRUE)
+  DSfind = substr(splitname[[1]][2],2,3)
+  histfileidx = grep(DSfind,files[histidx])
+  outarray[,,which(yearsfull %in% yearlist[[histidx[histfileidx]]]) ] = outputdata[[histidx[histfileidx]]]
+  outarray[,,which(yearsfull %in% yearlist[[futureidx[i]]]) ] = outputdata[[futureidx[i]]]
+}
+  outputdata2[[counter]] = outarray
+  if(datasetname=="I35"){ # makes common file names for later
+    filesplit = do.call("c",strsplit(files[futureidx[i]],"_",fixed=TRUE))
+    ems = filesplit[4]
+    DSname = paste("EDQM",DSfind,sep="")
+    if(GCMs[g]=="A1") GCMname="CCSM4"
+    if(GCMs[g]=="A2") GCMname="MIROC5"
+    if(GCMs[g]=="A3") GCMname="MPI-ESM-LR"
+    
+    fileslist[[counter]] = paste(varname,"_",GCMname,"_",DSname,"_",ems,"_anom.nc",sep="")
+  } 
+  
 if(datasetname=="maca"){ # makes common file names for later
 filesplit = strsplit(files[futureidx[i]],"_",fixed=TRUE)[[1]]
 ems = strsplit(filesplit[4],".",fixed=TRUE)[[1]][1]
@@ -233,57 +239,8 @@ GCMidx2 = which(GCMnamelist[,which(names(GCMnamelist)==datasetname)]==GCMs[g])
 fileslist[[counter]] = paste(varname,"_",GCMnamelist[GCMidx2,1],"_",datasetname,"_",scennamelist[emsidx,1],"_anom.nc",sep="")
 } 
 
-if(datasetname=="cmip5.bcca"){ # makes common file names for later
-filesplit = strsplit(files[futureidx[i]],"_",fixed=TRUE)[[1]]
-ems = filesplit[7]
-emsidx = which(scennamelist[,which(names(scennamelist)==datasetname)]==ems)
-GCMidx2 = which(GCMnamelist[,which(names(GCMnamelist)==datasetname)]==GCMs[g])
-
-fileslist[[counter]] = paste(varname,"_",GCMnamelist[GCMidx2,1],"_",datasetname,"_",scennamelist[emsidx,1],"_anom.nc",sep="")
-} 
-
-if(datasetname=="dcp"){ # makes common file names for later
-filesplit = strsplit(files[futureidx[i]],"-",fixed=TRUE)[[1]]
-ems = filesplit[2]
-if(length(filesplit)==6) ems = filesplit[3]
-emsidx = which(scennamelist[,which(names(scennamelist)==datasetname)]==ems)
-GCMidx2 = which(GCMnamelist[,which(names(GCMnamelist)==datasetname)]==GCMs[g])
-fileslist[[counter]] = paste(varname,"_",GCMnamelist[GCMidx2,1],"_",datasetname,"_",scennamelist[emsidx,1],"_anom.nc",sep="")
-} 
-
-if(datasetname=="ccr"){ # makes common file names for later
-filesplit = strsplit(files[futureidx[i]],"-",fixed=TRUE)[[1]]
-ems = strsplit(filesplit[1],"/",fixed=TRUE)[[1]][4]
-emsidx = which(scennamelist[,which(names(scennamelist)==datasetname)]==ems)
-GCMidx2 = which(GCMnamelist[,which(names(GCMnamelist)==datasetname)]==GCMs[g])
-fileslist[[counter]] = paste(varname,"_",GCMnamelist[GCMidx2,1],"_",datasetname,"_",scennamelist[emsidx,1],"_anom.nc",sep="")
-} 
-
-if(datasetname=="cl10"){ # makes common file names for later
-GCMidx2 = which(GCMnamelist[,which(names(GCMnamelist)==datasetname)]==GCMs[g])
-#fileslist[[counter]] = paste(varname,"_",GCMnamelist[GCMidx2,1],"_",datasetname,"_a2_anom.nc",sep="")
-fileslist[[counter]] = paste(varname,"_",GCMnamelist[GCMidx2,1],"_",datasetname,"_rcp85_anom.nc",sep="")
-} 
-
-
 counter=counter+1
 }
-
-
-} else { # regcm data is pre-combined, so I'm just doing file names for that dataset.
-
-outputdata2[[counter]] = outputdata[[GCMidx]]
-
-if(datasetname=="regcm"){ # makes common file names for later
-GCMidx2 = which(GCMnamelist[,which(names(GCMnamelist)==datasetname)]==GCMs[g])
-fileslist[[counter]] = paste(varname,"_",GCMnamelist[GCMidx2,1],"_",datasetname,"_a2_anom.nc",sep="")
-#fileslist[[counter]] = paste(varname,"_",GCMnamelist[GCMidx2,1],"_",datasetname,"_rcp85_anom.nc",sep="")
-}
-
-counter=counter+1
-
-}
-
 
 message("Finished combining files for GCM ",g," / ",length(GCMs))
 }
@@ -294,7 +251,7 @@ rm(outputdata)
 # Calculate historical climatology
 
 outputclimodat = list()
-yearsidx = which(yearsfull %in% 1981:2000)
+yearsidx = which(yearsfull %in% 1981:2005)
 
 for(i in 1:length(outputdata2)){
 outputclimodat[[i]] = apply(outputdata2[[i]][,,yearsidx],c(1,2),mean,na.rm=TRUE)
@@ -310,7 +267,7 @@ for(i in 1:length(outputdata2)){
 outputanomdat[[i]] = outputdata2[[i]]
 for(t in 1:length(yearsfull)){
 
-if(varname=="tmax95" | varname=="tmin32" | varname=="pr25" | varname=="tmax" | varname=="tmin"){
+if(varname=="tmax95" | varname=="tmin32" | varname=="pr25" | varname=="tasmax" | varname=="tasmin"){
 outputanomdat[[i]][,,t] = outputdata2[[i]][,,t]-outputclimodat[[i]]
 }
 
@@ -322,15 +279,11 @@ outputanomdat[[i]][,,t] = ((outputdata2[[i]][,,t]-outputclimodat[[i]])/(outputcl
 message("Finished anomaly calcs for file ",i," / ",length(outputdata2))
 }
 
-#testsfc = list(x=lon,y=lat,z=outputanomdat[[1]][,,1])
-#surface(testsfc,type="I")
-#map("state",add=TRUE)
-
 #############
 # Write data with new file and variable names to uncertainty folder
 
-if(varname=="tmax" | varname=="tmin"){
-dataunits1 = dataunits2 = "C"
+if(varname=="tasmax" | varname=="tasmin"){
+dataunits1 = dataunits2 = "K"
 }
 
 if(varname=="tmax95" | varname=="tmin32" | varname=="pr25"){
@@ -343,31 +296,31 @@ dataunits1 = "mm"
 dataunits2 = "%"
 }
 
-dimX <- dim.def.ncdf( "lon", "degrees_east", lon)
-dimY <- dim.def.ncdf( "lat", "degrees_north", lat )
-dimT <- dim.def.ncdf( "time","year",yearsfull)
+dimX <- ncdim_def( "lon", "degrees_east", lon)
+dimY <- ncdim_def( "lat", "degrees_north", lat )
+dimT <- ncdim_def( "time","year",yearsfull)
 
 # Make varables of various dimensionality, for illustration purposes
 mv <- 1e20 # missing value to use
 
 for(i in 1:length(outputdata2)){
 
-fileout = paste("uncertainty/SE/anomdat/",fileslist[i],sep="")
+fileout = paste("/home/woot0002/uncertainty/anomdat/",fileslist[i],sep="")
 
-var1d <- var.def.ncdf(varname, dataunits1, list(dimX,dimY,dimT), mv )
-var2d <- var.def.ncdf(paste(varname,"_climo",sep=""), dataunits1, list(dimX,dimY), mv )
-var3d <- var.def.ncdf(paste(varname,"_anom",sep=""), dataunits2, list(dimX,dimY,dimT), mv )
+var1d <- ncvar_def(varname, dataunits1, list(dimX,dimY,dimT), mv )
+var2d <- ncvar_def(paste(varname,"_climo",sep=""), dataunits1, list(dimX,dimY), mv )
+var3d <- ncvar_def(paste(varname,"_anom",sep=""), dataunits2, list(dimX,dimY,dimT), mv )
 
 # Create the test file
 # Write some data to the file
 # close ncdf
 
-nc1 <- create.ncdf(fileout , list(var1d,var2d,var3d) )
-put.var.ncdf( nc1, var1d, outputdata2[[i]]) # no start or count: write all values\
-put.var.ncdf( nc1, var2d, outputclimodat[[i]]) # no start or count: write all values\
-put.var.ncdf( nc1, var3d, outputanomdat[[i]]) # no start or count: write all values\
+nc1 <- nc_create(fileout , list(var1d,var2d,var3d) )
+ncvar_put( nc1, var1d, outputdata2[[i]]) # no start or count: write all values\
+ncvar_put( nc1, var2d, outputclimodat[[i]]) # no start or count: write all values\
+ncvar_put( nc1, var3d, outputanomdat[[i]]) # no start or count: write all values\
 
-close.ncdf(nc1)
+nc_close(nc1)
 
 message("Finished writing file ",i," / ",length(outputdata2))
 }
