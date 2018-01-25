@@ -270,7 +270,7 @@ fileout = paste("/home/woot0002/uncertainty/anomdat/",varname,"_",datasetname,"_
 
 var1d <- ncvar_def(varname, dataunits1, list(dimX,dimY,dimT), mv )
 var2d <- ncvar_def(paste(varname,"_climo",sep=""), dataunits1, list(dimX,dimY), mv )
-var3d <- ncvar_det(paste(varname,"_anom",sep=""), dataunits2, list(dimX,dimY,dimT), mv )
+var3d <- ncvar_def(paste(varname,"_anom",sep=""), dataunits2, list(dimX,dimY,dimT), mv )
 
 # Create the test file
 # Write some data to the file
