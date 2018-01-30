@@ -64,8 +64,8 @@ dev.off()
 # Argument parser
 
 library(optparse)
-source("analysisfunctions.R")
-source("colorramp.R")
+source("/home/woot0002/scripts/analysisfunctions.R")
+#source("colorramp.R")
 library(ncdf4)
 library(maps)
 library(fields)
