@@ -740,19 +740,22 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
     }
   }
   
-  if(datarange[2]==0 & colorchoice=="redtoblue") colorchoice="redtowhite"
+  if(datarange[2]==0 & colorchoice=="redtoblue") colorchoice="redtowhite" # check this line
+  if(datarange[2]==0 & colorchoice=="orangetopurple") colorchoice="orangetowhite"
   if(startpoint==0 & centerpoint==0 & colorchoice=="bluetored") colorchoice="whitetored"
   if(startpoint==0 & centerpoint==0 & colorchoice=="browntogreen") colorchoice="whitetogreen"
+  if(startpoint==0 & colorchoice=="purpletoorange") colorchoice="whitetoorange"
+  if(startpoint==0 & colorchoice=="orangetopurple") colorchoice="whitetopurple"
   
   zlimdiff = datarange
   breaksdiff = c(seq(datarange[1],datarange[2],by=breaklist[breakcheck]))
   
   if(any(breaksdiff==centerpoint)==FALSE & zlimdiff[1]<centerpoint & zlimdiff[2]>centerpoint){
-    idx = which(abs(breaksdiff)==min(abs(breaksdiff)))
-    if(length(idx)==1) breaksdiff[idx]=centerpoint
-    if(length(idx)>1){
-      breaksdiff = c(breaksdiff[1:(idx[1]-1)],centerpoint,breaksdiff[(idx[2]+1):length(breaksdiff)])
-    }
+  idx = which(abs(breaksdiff)==min(abs(breaksdiff)))
+  if(length(idx)==1) breaksdiff[idx]=centerpoint
+  if(length(idx)>1){
+  breaksdiff = c(breaksdiff[1:(idx[1]-1)],centerpoint,breaksdiff[(idx[2]+1):length(breaksdiff)])
+  }
   } 
   
   message("zlimdiff: ",zlimdiff)
@@ -760,11 +763,14 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
   message("startpoint: ",startpoint)
   
   if(startpoint==centerpoint){
-    message("startpoint matches centerpoint")
-    if(colorchoice == "whitetored") colorbardiff = colorRampPalette(c("#f5f5f5","#fddbc7","#f4a582","#d6604d","#b2182b","#67001f"))(length(breaksdiff)-1)
-    if(colorchoice == "yellowtored") colorbardiff = colorRampPalette(c("#ffffb2","#fed976","#feb24c","#fd8d3c","#f03b20","#bd0026"))(length(breaksdiff)-1)
-    
-    if(colorchoice == "whitetogreen") colorbardiff = colorRampPalette(c("#f5f5f5","#c7eae5","#80cdc1","#35978f","#01665e","#003c30"))(length(breaksdiff)-1)
+  message("startpoint matches centerpoint")
+  if(colorchoice == "whitetored") colorbardiff = colorRampPalette(c("#f5f5f5","#fddbc7","#f4a582","#d6604d","#b2182b","#67001f"))(length(breaksdiff)-1)
+  if(colorchoice == "yellowtored") colorbardiff = colorRampPalette(c("#ffffb2","#fed976","#feb24c","#fd8d3c","#f03b20","#bd0026"))(length(breaksdiff)-1)
+  
+  if(colorchoice == "whitetogreen") colorbardiff = colorRampPalette(c("#f5f5f5","#c7eae5","#80cdc1","#35978f","#01665e","#003c30"))(length(breaksdiff)-1)
+  if(colorchoice == "whitetoorange") colorbardiff = colorRampPalette(c("#f5f5f5","#fee0b6","#fdb863","#e08214","#b35806","#7f3b08"))(length(breaksdiff)-1)
+  if(colorchoice == "whitetopurple") colorbardiff = colorRampPalette(c("#f5f5f5","#d8daeb","#b2abd2","#8073ac","#542788","#2d004b"))(length(breaksdiff)-1)  
+  
   } else {
     if(datarange[2]>centerpoint){
       message("datarange[2] > centerpoint")
@@ -782,6 +788,12 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
       if(colorchoice == "greentobrown"){
         colorbardiff = c(colorRampPalette(c("#003c30","#01665e","#35978f","#80cdc1","#c7eae5","#f5f5f5"))(zeroidx-1),colorRampPalette(c("#f5f5f5","#f6e8c3","#dfc27d","#bf812d","#8c510a","#543005"))(length(breaksdiff)-zeroidx))
       } 
+      if(colorchoice == "purpletoorange"){
+        colorbardiff = c(colorRampPalette(c("#2d004b","#542788","#8073ac","#b2abd2","#d8daeb","#f5f5f5"))(zeroidx-1),colorRampPalette(c("#f5f5f5","#fee0b6","#fdb863","#e08214","#b35806","#7f3b08"))(length(breaksdiff)-zeroidx))
+      } 
+      if(colorchoice == "orangetopurple"){
+        colorbardiff = c(colorRampPalette(c("#7f3b08","#b35806","#e08214","#fdb863","#fee0b6","#f5f5f5"))(zeroidx-1),colorRampPalette(c("#f5f5f5","#d8daeb","#b2abd2","#8073ac","#542788","#2d004b"))(length(breaksdiff)-zeroidx))
+      } 
       
     } else {
       message("odd if")
@@ -789,12 +801,16 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
         colorbardiff = colorRampPalette(c("#67001f","#b2182b","#d6604d","#f4a582","#fddbc7","#f5f5f5"))(length(breaksdiff)-1)
       } 
       
+      if(colorchoice=="orangetowhite"){
+        colorbardiff = colorRampPalette(c("#7f3b08","#b35806","#e08214","#fdb863","#fee0b6","#f5f5f5"))(length(breaksdiff)-1)
+      }
+      
     }
   }
-  
-  output = list(zlimdiff,breaksdiff,colorbardiff)
-  output
-  
+
+output = list(zlimdiff,breaksdiff,colorbardiff)
+output
+
 }
 
 
