@@ -522,8 +522,12 @@ netcdftoyearlycalcs = function(filename,varname,dimnames=c("lon","lat","time"),t
     
     test = nc_open(filename)
       tempdata = ncvar_get(test,varname,start=c(1,1,yearidx[1]),count=c(-1,-1,length(yearidx)))
-      if(varname=="pr") tempdata=tempdata*86400
-
+      if(varname=="pr"){
+        tempdata=tempdata*86400
+        #message("Did pr unit conversion from mks to mm")  
+        #message("Min value = ",min(tempdata,na.rm=TRUE)," Max value = ",max(tempdata,na.rm=TRUE))
+      } 
+      
     if(y==1){
       yearlydat = array(NA,dim=c(dim(tempdata)[1],dim(tempdata)[2],length(years)))
       lat = ncvar_get(test,dimnames[2])
@@ -535,11 +539,23 @@ netcdftoyearlycalcs = function(filename,varname,dimnames=c("lon","lat","time"),t
     nc_close(test)
     
     if(threscalc==TRUE){
+      #message("Doing threshold calculations")
+      #message("The threshold being used is ",thres)
+      #message("The condition is ",condition)
+      
       dmask = array(ifelse(is.na(tempdata[,,1])==FALSE,1,0),dim=dim(tempdata))
-      if(condition=="gte") tempdata=ifelse(tempdata>=thres,1,0)
-      if(condition=="gt") tempdata=ifelse(tempdata>thres,1,0)
-      if(condition=="lte") tempdata=ifelse(tempdata<=thres,1,0)
-      if(condition=="lt") tempdata=ifelse(tempdata<thres,1,0)
+      if(condition=="gte"){
+        tempdata=ifelse(tempdata >= as.numeric(thres),1,0)
+      } 
+      if(condition=="gt"){
+        tempdata=ifelse(tempdata > as.numeric(thres),1,0)
+      } 
+      if(condition=="lte"){
+        tempdata=ifelse(tempdata <= as.numeric(thres),1,0)
+      } 
+      if(condition=="lt"){
+        tempdata=ifelse(tempdata < as.numeric(thres),1,0)
+      } 
       tempdata = ifelse(dmask==1,tempdata,NA)
     }
     
@@ -547,6 +563,7 @@ netcdftoyearlycalcs = function(filename,varname,dimnames=c("lon","lat","time"),t
     if(appliedfunction=="sum") {
       yearlydat[,,y] = apply(tempdata,c(1,2),sum,na.rm=TRUE)
       yearlydat[,,y] = ifelse(domainmask==1,yearlydat[,,y],NA)
+      message("Min value = ",min(yearlydat[,,y],na.rm=TRUE)," Max value = ",max(yearlydat[,,y],na.rm=TRUE))
     }
     if(appliedfunction=="max"){
       yearlydat[,,y] = apply(tempdata,c(1,2),max,na.rm=TRUE)
@@ -667,7 +684,7 @@ obs_colorramp = function(obs,colorchoice,Blimit){
 
 colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_scale = FALSE, fixed_scale=c(-100,100)){
   
-  #inputdata=diffyearmon
+  #inputdata=diffs[[3]]
   #colorchoice="bluetored"
   #Blimit = 30
   #type="difference"
