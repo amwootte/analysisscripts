@@ -15,6 +15,60 @@ distfunc = function(lon,lat,modelgrid){
 
 ####
 
+netcdftodailypointseries = function(filename,varname,dimnames=c("lon","lat","time"),datesdataperiod,loc_lat,loc_lon){
+  
+  #filename = histfilelist[i]
+  #varname=varin
+  #dimnames=c("lon","lat","time")
+  #datesdataperiod=datesin
+  #loc_lat=loc_lat
+  #loc_lon=loc_lon
+  yearlydat = c()
+  #dates = datesdataperiod
+  for(y in 1:length(datesdataperiod)){
+    test = nc_open(filename)
+    
+    if(y==1){
+      ###
+      # create model grid
+      lon = ncvar_get(test,dimnames[1])
+      lat = ncvar_get(test,dimnames[2])
+      LON = rep(lon,each=length(lat))
+      LAT = rep(lat,length(lon))
+      R = rep(1:length(lon),each=length(lat))
+      C = rep(1:length(lat),length(lon))
+      modelgrid = data.frame(R,C,LON,LAT)
+      names(modelgrid) = c("R","C","lon","lat")
+      if(all(modelgrid$lon>0)==TRUE) modelgrid$lon = modelgrid$lon-360
+      
+      ###
+      # get cells to use
+      loc_lon = as.numeric(loc_lon)
+      loc_lat = as.numeric(loc_lat)
+      if(loc_lon>0) loc_lon=loc_lon-360
+      
+      pointarea = distfunc(loc_lon,loc_lat,modelgrid)
+      locstart = c(pointarea$R-1,pointarea$C-1)
+    }
+  
+    tempdata = ncvar_get(test,varname,start=c(locstart[1],locstart[2],y),count=c(3,3,1))
+    if(varname=="pr"){
+      tempdata=tempdata*86400
+      #message("Did pr unit conversion from mks to mm")  
+      #message("Min value = ",min(tempdata,na.rm=TRUE)," Max value = ",max(tempdata,na.rm=TRUE))
+    } 
+    
+    yearlydat[y] = mean(tempdata,na.rm=TRUE)
+    nc_close(test)
+    rm(tempdata)
+    message("Finished Calcs for day ",datesdataperiod[y])
+  }
+  list(lon,lat,yearlydat)
+}
+
+  
+####
+
 netcdfcombocalcs = function(filename,varname="tasmax",dimnames=c("lon","lat","time"),yearlydataperiod=c(1981,2005),datesdataperiod=seq(as.Date("1981-01-01"),as.Date("2005-12-31"),by="day"),combofunction="growing_season_length"){
                             
   file1 = filename
@@ -509,9 +563,7 @@ netcdftoyearlycombocalcs = function(filenames,varnames=c(),dimnames=c("lon","lat
 
 ###
 
-netcdftoyearlycalcs = function(filename,varname,dimnames=c("lon","lat","time"),threscalc=FALSE,thres=NA,condition="gte",yearlydataperiod=c(1981,2005),datesdataperiod=seq(as.Date("1981-01-01"),as.Date("2005-12-31"),by="day"),appliedfunction="mean"){
-  
-  #filename=histfilelist[i];varname=varin;dimnames=c("lon","lat","time");threscalc=TC;thres=TH;condition=cond;yearlydataperiod=c(1981,2005);datesdataperiod=datesin;appliedfunction=appfunc
+netcdffreqcalcs = function(filename,varname,dimnames=c("lon","lat","time"),yearlydataperiod=c(1981,2005),datesdataperiod=seq(as.Date("1981-01-01"),as.Date("2005-12-31"),by="day"),appliedfunction="freq2011heat"){
   
   years = yearlydataperiod[1]:yearlydataperiod[2]
   
@@ -520,6 +572,57 @@ netcdftoyearlycalcs = function(filename,varname,dimnames=c("lon","lat","time"),t
   for(y in 1:length(years)){
     yearidx = which(as.numeric(substr(dates,1,4))==years[y])
     
+    test = nc_open(filename)
+    tempdata = ncvar_get(test,varname,start=c(1,1,yearidx[1]),count=c(-1,-1,length(yearidx)))
+    if(varname=="pr"){
+      tempdata=tempdata*86400
+    } 
+    
+    if(y==1){
+      yearlydat = array(NA,dim=c(dim(tempdata)[1],dim(tempdata)[2],length(years)))
+      lat = ncvar_get(test,dimnames[2])
+      lon = ncvar_get(test,dimnames[1])
+      times = ncvar_get(test,dimnames[3])
+      domainmask = ifelse(is.na(tempdata[,,1])==FALSE,1,0)
+      startdate = substr(test$dim[[4]]$units,12,21)
+    }
+    nc_close(test)
+    
+    dmask = array(ifelse(is.na(tempdata[,,1])==FALSE,1,0),dim=dim(tempdata))
+    if(appfunc=="freq2011heat"){
+      tempdata=ifelse(tempdata >= 310.928,1,0)
+      yearlydat[,,y] = apply(tempdata,c(1,2),sum,na.rm=TRUE)
+      yearlydat[,,y] = ifelse(domainmask==1,yearlydat[,,y],NA)
+      
+      if(y==1){
+        test = nc_open("/data2/3to5/I35/METDATA_tmax100.nc")
+        thresvals = ncvar_get(test,"tmax100_2011")
+        nc_close(test)
+      }
+      yearlydat[,,y]=ifelse(yearlydat[,,y]>thresvals,1,0)
+    } 
+    
+    rm(tempdata)
+    message("Finished Calcs for year ",years[y])
+  }
+  
+  list(lon,lat,yearlydat)
+}
+
+###
+
+netcdftoyearlycalcs = function(filename,varname,dimnames=c("lon","lat","time"),threscalc=FALSE,thres=NA,condition="gte",yearlydataperiod=c(1981,2005),datesdataperiod=seq(as.Date("1981-01-01"),as.Date("2005-12-31"),by="day"),appliedfunction="mean"){
+  
+  #filename=histfilelist[i];varname=varin;dimnames=c("lon","lat","time");threscalc=TC;thres=TH;condition=cond;yearlydataperiod=c(1981,2005);datesdataperiod=datesin;appliedfunction=appfunc
+  
+  years = yearlydataperiod[1]:yearlydataperiod[2]
+  #print(years)
+  dates = datesdataperiod
+  #print(dates[1:10])
+  for(y in 1:length(years)){
+    yearidx = which(as.numeric(substr(dates,1,4))==years[y])
+    #print(yearidx)
+    #print(length(yearidx))
     test = nc_open(filename)
       tempdata = ncvar_get(test,varname,start=c(1,1,yearidx[1]),count=c(-1,-1,length(yearidx)))
       if(varname=="pr"){
