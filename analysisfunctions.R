@@ -26,6 +26,7 @@ netcdftodailypointseries = function(filename,varname,dimnames=c("lon","lat","tim
   yearlydat = c()
   #dates = datesdataperiod
   for(y in 1:length(datesdataperiod)){
+    
     test = nc_open(filename)
     
     if(y==1){
@@ -642,9 +643,9 @@ netcdftoyearlycalcs = function(filename,varname,dimnames=c("lon","lat","time"),t
     nc_close(test)
     
     if(threscalc==TRUE){
-      #message("Doing threshold calculations")
-      #message("The threshold being used is ",thres)
-      #message("The condition is ",condition)
+      message("Doing threshold calculations")
+      message("The threshold being used is ",thres)
+      message("The condition is ",condition)
       
       dmask = array(ifelse(is.na(tempdata[,,1])==FALSE,1,0),dim=dim(tempdata))
       if(condition=="gte"){
@@ -739,6 +740,7 @@ climocalc = function(yearlydata,yearlydataperiod=c(1981,2005),climoperiod=c(1981
   years = yearlydataperiod[1]:yearlydataperiod[2]
   yearidx = which(years<=climoperiod[2] & years>=climoperiod[1])
   climo = apply(yearlydata[,,yearidx],c(1,2),mean,na.rm=TRUE)
+  message("Climo min value = ",min(climo,na.rm=TRUE)," max value = ",max(climo,na.rm=TRUE))
   climo
 }
 
@@ -860,6 +862,7 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
     }
   }
   
+  if(datarange[1]==0 & colorchoice=="redtoblue") colorchoice="whitetoblue" # check this line
   if(datarange[2]==0 & colorchoice=="redtoblue") colorchoice="redtowhite" # check this line
   if(datarange[2]==0 & colorchoice=="orangetopurple") colorchoice="orangetowhite"
   if(startpoint==0 & centerpoint==0 & colorchoice=="bluetored") colorchoice="whitetored"
@@ -881,6 +884,7 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
   message("zlimdiff: ",zlimdiff)
   message("centerpoint: ",centerpoint)
   message("startpoint: ",startpoint)
+  message("colorchoice: ",colorchoice)
   
   if(startpoint==centerpoint){
   message("startpoint matches centerpoint")
@@ -890,6 +894,8 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
   if(colorchoice == "whitetogreen") colorbardiff = colorRampPalette(c("#f5f5f5","#c7eae5","#80cdc1","#35978f","#01665e","#003c30"))(length(breaksdiff)-1)
   if(colorchoice == "whitetoorange") colorbardiff = colorRampPalette(c("#f5f5f5","#fee0b6","#fdb863","#e08214","#b35806","#7f3b08"))(length(breaksdiff)-1)
   if(colorchoice == "whitetopurple") colorbardiff = colorRampPalette(c("#f5f5f5","#d8daeb","#b2abd2","#8073ac","#542788","#2d004b"))(length(breaksdiff)-1)  
+  
+  if(colorchoice == "whitetoblue") colorbardiff = colorRampPalette(c("#f5f5f5","#d1e5f0","#92c5de","#4393c3","#2166ac","#053061"))(length(breaksdiff)-1)
   
   } else {
     if(datarange[2]>centerpoint){
