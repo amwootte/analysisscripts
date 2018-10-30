@@ -6,6 +6,12 @@ step4 = function(step2_filename,colorchoicediff,BINLIMIT,diffbartype,use_fixed_s
 
 # must pass in the following: step2_filename, colorchoicediff, BINLIMIT, diffbartype
 # file format recommended /data2/3to5/I35/ens_means/tasmax_ensmean_absolute_2071-2099.nc
+  #step2_filename = "/data2/3to5/I35/ens_means/tmax100_ensmean_absolute_2041-2070_ann.nc"
+  #colorchoicediff="bluetored"
+  #BINLIMIT=20
+  #diffbartype="difference"
+  #use_fixed_scale=TRUE
+  #fixed_scale = c(0,60)
   
 split1 = strsplit(step2_filename,"/",fixed=TRUE)[[1]]
 split2 = strsplit(split1[length(split1)],"_",fixed=TRUE)[[1]]
@@ -41,6 +47,15 @@ plotfilename = paste("/data2/3to5/I35/plots/ens_means/EnsMean_",varname,"_",futu
 
 pdf(plotfilename,onefile=TRUE,width=10,height=5)
 diffcolorbar = colorramp(c(rcp26dat,rcp45dat,rcp85dat),colorchoice=colorchoicediff,Blimit=BINLIMIT,use_fixed_scale = use_fixed_scale,fixed_scale=fixed_scale)
+
+if(use_fixed_scale==TRUE){
+  rcp26dat = ifelse(rcp26dat<fixed_scale[1],fixed_scale[1],rcp26dat)
+  rcp45dat = ifelse(rcp45dat<fixed_scale[1],fixed_scale[1],rcp45dat)
+  rcp85dat = ifelse(rcp85dat<fixed_scale[1],fixed_scale[1],rcp85dat)
+  rcp26dat = ifelse(rcp26dat>fixed_scale[2],fixed_scale[2],rcp26dat)
+  rcp45dat = ifelse(rcp45dat>fixed_scale[2],fixed_scale[2],rcp45dat)
+  rcp85dat = ifelse(rcp85dat>fixed_scale[2],fixed_scale[2],rcp85dat)
+}
 
 par(mfrow=c(1,2))
 

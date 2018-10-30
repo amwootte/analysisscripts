@@ -5,8 +5,6 @@
 step1 = function(varname,histfilelist,projfilelist,appfunc,difftype,varunits,changeunits,futureperiod,TC,TH,cond,seasonin){
 
 # must pass in the following: histfilelist,histfilebreakdown, projfilelist,projfilebreakdown,TC,TH,cond, appfunc, varname, futureperiod,tempperiod,varunits,changeunits,usecompound
-# if usecompound==TRUE, histfilelist and projfilelist will be a list also.
-# currently configured for usecompound==FALSE
 
 # requirements
 # varname - short varname, like tasmax, tasmin, pr, tmax95,tmin32, pr25,mdrn
@@ -20,13 +18,13 @@ step1 = function(varname,histfilelist,projfilelist,appfunc,difftype,varunits,cha
 # TC - is this a threshold calculation? TRUE or FALSE (default)
 # TH - threshold value, only used if TC is TRUE. Default is NA
 # cond - condition connected with the threshold. Used if TC is TRUE. gt,gte,lt,lte are options
-  futureperiod = do.call("c",strsplit(futureperiod,",",fixed=TRUE))
   
+  futureperiod = do.call("c",strsplit(futureperiod,",",fixed=TRUE))
   histfilelist = do.call("c",strsplit(histfilelist,",",fixed=TRUE))
   projfilelist = do.call("c",strsplit(projfilelist,",",fixed=TRUE))
  
   varin = varname
-  if(varname=="tmax95" | varname=="tmax100") varin="tasmax" # for the tmax95 and other threshold variables, you need to use the base variable and calculate the number of days matching the threshold.
+  if(varname=="tmax90" | varname=="tmax95" | varname=="tmax100") varin="tasmax" # for the tmax95 and other threshold variables, you need to use the base variable and calculate the number of days matching the threshold.
   if(varname=="tmin32" | varname=="tmin28" | varname=="frd") varin="tasmin"
   if(varname=="pr25" | varname=="pr50" | varname=="mdrn" | varname=="rx1day" | varname=="rx5day" | varname=="cdd" | varname=="cwd") varin="pr"
   
@@ -87,7 +85,7 @@ for(i in 1:length(histfilelist)){
     yearlyoutput = netcdfcombocalcs(histfilelist[i],varname=varin,dimnames=c("lon","lat","time"),yearlydataperiod=c(1981,2005),datesdataperiod=datesin,combofunction=appfunc)
   }
   
-  
+  #print(range(yearlyoutput[[3]],na.rm=TRUE))
   
   if(i==1){
     lon = yearlyoutput[[1]]
@@ -102,7 +100,7 @@ for(i in 1:length(histfilelist)){
   message("Finished with file ",i," / ",length(histfilelist))
   message("Time to complete gathering: ",ptmend[3]-ptm[3]," secs")
 }
-
+#print(range(histlist,na.rm=TRUE))
 # 1b- Future calcs
 
 dates = seq(as.Date("2006-01-01"),as.Date("2099-12-31"),by="day")
@@ -122,7 +120,7 @@ for(i in 1:length(projfilelist)){
   if(seasonin=="ann"){
     yearlyoutput = netcdftoyearlycalcs(projfilelist[i],varname=varin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=futureperiod,datesdataperiod=datesin,appliedfunction=appfunc)
   } else {
-    yearlyoutput = netcdftoseasonalcalcs(projfilelist[i],varname=varin,season=seasonin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(2041,2070),datesdataperiod=datesin,appliedfunction=appfunc)
+    yearlyoutput = netcdftoseasonalcalcs(projfilelist[i],varname=varin,season=seasonin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=futureperiod,datesdataperiod=datesin,appliedfunction=appfunc)
   }
   }
   
@@ -130,20 +128,21 @@ for(i in 1:length(projfilelist)){
     yearlyoutput = netcdfcombocalcs(projfilelist[i],varname=varin,dimnames=c("lon","lat","time"),yearlydataperiod=futureperiod,datesdataperiod=datesin,combofunction=appfunc)
   }
   
-  
+  #print(range(yearlyoutput[[3]],na.rm=TRUE))
   
   if(i==1){
     projlist = array(NA,dim=c(length(lon),length(lat),length(projfilelist)))
   }
   
   projlist[,,i] = climocalc(yearlyoutput[[3]],yearlydataperiod=futureperiod,climoperiod=futureperiod)
+  
   rm(yearlyoutput)
   gc()
   ptmend = proc.time()
   message("Finished with file ",i," / ",length(projfilelist))
   message("Time to complete gathering: ",ptmend[3]-ptm[3]," secs")
 }
-
+#print(range(projlist,na.rm=TRUE))
 # 1-c Projected Difference Calculation
 
 diffs = array(NA,dim=dim(projlist))

@@ -30,7 +30,7 @@ appfunc = "sum" # which functions do you apply for yearly calculations? "mean" i
 # for precipitation and all the threshold functions this should be "sum", otherwise use "mean"
 
 TC = TRUE   # Threshold calculator - should this be calculating a threshold? TRUE (calculate threshold) or FALSE(don't calculate threshold)
-TH = -1.5  # Threshold value - what's the threshold the script should calculate for?
+TH = 0  # Threshold value - what's the threshold the script should calculate for?
 cond = "lte" # Threshold condition - "gte" = greater than or equal to, "lte" = less than or equal to, "gt" = greater than, "lt"= less than
 # threshold value and threshold condition are ignored if TC=FALSE
 # should be using these to calculate tmax95 and the others, temperature thresholds should be supplied in degrees K, precipitation thresholds in mm
@@ -43,8 +43,8 @@ cond = "lte" # Threshold condition - "gte" = greater than or equal to, "lte" = l
 
 ###########
 # 1. Data Gather and conversion
-histfilelist = system(paste("ls /data2/3to5/I35/",varin,"/EDQM/",varin,scale,"*historical*.nc",sep=""),intern=T)
-projfilelist = system(paste("ls /data2/3to5/I35/",varin,"/EDQM/",varin,scale,"*rcp*.nc",sep=""),intern=T)
+histfilelist = system(paste("ls /data2/3to5/I35/",varin,scale,"/EDQM/",varin,scale,"*historical*.nc",sep=""),intern=T)
+projfilelist = system(paste("ls /data2/3to5/I35/",varin,scale,"/EDQM/",varin,scale,"*rcp*.nc",sep=""),intern=T)
 
 filebreakdown = do.call(rbind,strsplit(projfilelist,"_",fixed=TRUE))
 filebreakdown2 = do.call(rbind,strsplit(filebreakdown[,3],"-",fixed=TRUE))
@@ -90,9 +90,16 @@ for(i in 1:length(histfilelist)){
     histlist = array(NA,dim=c(length(lon),length(lat),length(histfilelist)))
   }
   nc_close(test)
-  tmp = apply(vardata,c(1,2),sum,na.rm=TRUE)
-  tmp = ifelse(is.na(vardata[,,1])==FALSE,tmp,NA)
-  histlist[,,i] = tmp
+  
+  years = unique(as.numeric(substr(dates,1,4)))
+  tmp = array(NA,dim=c(length(lon),length(lat),length(years)))
+  for(y in 1:length(years)){
+    yearidx2 = which(as.numeric(substr(dates,1,4))==years[y])
+    tmp[,,y]=apply(vardata[,,yearidx2],c(1,2),sum,na.rm=TRUE)
+    tmp[,,y] = ifelse(is.na(vardata[,,1])==FALSE,tmp[,,y],NA)
+  }
+  
+  histlist[,,i] = apply(tmp,c(1,2),mean,na.rm=TRUE)
   gc()
   ptmend = proc.time()
   message("Finished with file ",i," / ",length(histfilelist))
@@ -127,9 +134,16 @@ for(i in 1:length(projfilelist)){
     projlist = array(NA,dim=c(length(lon),length(lat),length(projfilelist)))
   }
   nc_close(test)
-  tmp = apply(vardata,c(1,2),sum,na.rm=TRUE)
-  tmp = ifelse(is.na(vardata[,,1])==FALSE,tmp,NA)
-  projlist[,,i] = tmp
+  
+  years = unique(as.numeric(substr(dates[yearidx],1,4)))
+  tmp = array(NA,dim=c(length(lon),length(lat),length(years)))
+  for(y in 1:length(years)){
+    yearidx2 = which(as.numeric(substr(dates[yearidx],1,4))==years[y])
+    tmp[,,y]=apply(vardata[,,yearidx2],c(1,2),sum,na.rm=TRUE)
+    tmp[,,y] = ifelse(is.na(vardata[,,1])==FALSE,tmp[,,y],NA)
+  }
+  
+  projlist[,,i] = apply(tmp,c(1,2),mean,na.rm=TRUE)
   
   gc()
   ptmend = proc.time()
@@ -178,7 +192,7 @@ histlist = statemask(histlist,inputlat=lat,inputlon=lon,state=applymask)
 ################
 # Plotting
 
-diffcolorbar = diff_colorramp(diffs[[3]],colorchoice=colorchoicediff,Blimit=BINLIMIT)
+diffcolorbar = colorramp(diffs[[3]],colorchoice=colorchoicediff,Blimit=BINLIMIT,type="difference")
 
 diffs_sort = diffs[[3]][,,order(projfilebreakdown$scen)]
 projfilebreakdown = projfilebreakdown[order(projfilebreakdown$scen),]
@@ -203,7 +217,7 @@ scensin = scens[c(1,3)]
 diffsg1_sort = diffsg1[[3]][,,c(1,3)]
 
 pdf(paste("Group1_",varname,scale,"_",difftype,".pdf",sep=""),onefile=TRUE,width=10,height=5)
-diffcolorbar = diff_colorramp(diffsg1[[3]],colorchoice=colorchoicediff,Blimit=BINLIMIT)
+diffcolorbar = colorramp(diffsg1[[3]],colorchoice=colorchoicediff,Blimit=BINLIMIT,type="difference")
 
 par(mfrow=c(1,2))
 

@@ -34,7 +34,7 @@ names(modelgrid) = c("R","C","lon","lat")
 #######
 # Get city locations and set GCM
 
-locations = read.table("/home/woot0002/REUproject/Tickprojectlocations.csv",header=TRUE,sep=",")
+locations = read.table("/home/woot0002/REUproject/ticklocationdata.csv",header=TRUE,sep=",")
 
 #######
 # Grab temperature and precipitation data for each location.
@@ -68,7 +68,7 @@ for(y in 1950:2005){
   
   # gather monthly mean temperature
   test = nc_open(filename2)
-  Tmean = c(Tmean,ncvar_get(test,"average_temperature",start=c(pointarea$R[1],pointarea$C[1],1),count=c(1,1,-1))*9/5+32)
+  Tmean = c(Tmean,ncvar_get(test,"average_temperature",start=c(pointarea$R[1],pointarea$C[1],1),count=c(1,1,-1)))
   nc_close(test)
   
   # gather monthly total precipitation

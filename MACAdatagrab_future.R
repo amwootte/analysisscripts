@@ -34,8 +34,8 @@ names(modelgrid) = c("R","C","lon","lat")
 #######
 # Get city locations and set GCM
 
-locations = read.table("/home/woot0002/REUproject/Tickprojectlocations.csv",header=TRUE,sep=",")
-GCM = "CCSM4"
+locations = read.table("/home/woot0002/REUproject/ticklocationdata.csv",header=TRUE,sep=",")
+GCM = "CNRM-CM5"
 
 #######
 # Grab temperature and precipitation data for each location.

@@ -1,5 +1,5 @@
 ###############
-# 3^5 Projected Change Analyses - annual only
+# 3^5 Projected Change Analyses - drought plotter
 
 library(ncdf4) # loading necessary libraries and extra functions
 library(maps)
@@ -10,45 +10,41 @@ source("analysisfunctions.R")
 ##############
 # User supplied inputs
 
-varname = "pr50" # short name for the variable of interest options include tasmax, tasmin, pr, tmax95, tmax100, tmin32, tmin28, pr25, and pr50
+varname = "SPEI" # short name for the variable of interest options include tasmax, tasmin, pr, tmax95, tmax100, tmin32, tmin28, pr25, and pr50
 varin = varname # don't change this
 #noleap=TRUE # if your data has leap days change this to FALSE, otherwise leave it alone.  Should be false for 3^5.
 
-if(varname=="tmax95" | varname=="tmax100") varin="tasmax" # for the tmax95 and other threshold variables, you need to use the base variable and calculate the number of days matching the threshold.
-if(varname=="tmin32" | varname=="tmin28" | varname=="frd") varin="tasmin"
-if(varname=="pr25" | varname=="pr50" | varname=="mdrn" | varname=="rx1day" | varname=="rx5day" | varname=="cdd" | varname=="cwd") varin="pr"
+if(varname=="SPIlow" | varname=="SPIhigh") varin="SPI" # for the tmax95 and other threshold variables, you need to use the base variable and calculate the number of days matching the threshold.
+if(varname=="SPEIlow" | varname=="SPEIlow") varin="SPEI"
+
+scale = 1 # monthly scale for SPI and SPEI
 
 difftype="absolute" # type of difference to take, can be either absolute or percent
 
 applymask = NA # if you don't want to apply a state mask, leave this alone
 
-colorchoicediff = "whitetored" # colorramps for difference plots, choices include "bluetored","redtoblue","browntogreen","greentobrown"
+colorchoicediff = "browntogreen" # colorramps for difference plots, choices include "bluetored","redtoblue","browntogreen","greentobrown"
 BINLIMIT = 30 # maximum number of color bins allowed for plotting the projected changes
 
-appfunc = "sum" # which functions do you apply for yearly calculations? "mean" is used for getting annual average temps for instance. "sum" would be used for annual total rainfall and thresholds
+appfunc = "mean" # which functions do you apply for yearly calculations? "mean" is used for getting annual average temps for instance. "sum" would be used for annual total rainfall and thresholds
 # for precipitation and all the threshold functions this should be "sum", otherwise use "mean"
 
-TC = TRUE   # Threshold calculator - should this be calculating a threshold? TRUE (calculate threshold) or FALSE(don't calculate threshold)
-TH = 50.8  # Threshold value - what's the threshold the script should calculate for?
-cond = "gte" # Threshold condition - "gte" = greater than or equal to, "lte" = less than or equal to, "gt" = greater than, "lt"= less than
+TC = FALSE   # Threshold calculator - should this be calculating a threshold? TRUE (calculate threshold) or FALSE(don't calculate threshold)
+TH = 0  # Threshold value - what's the threshold the script should calculate for?
+cond = "lte" # Threshold condition - "gte" = greater than or equal to, "lte" = less than or equal to, "gt" = greater than, "lt"= less than
 # threshold value and threshold condition are ignored if TC=FALSE
 # should be using these to calculate tmax95 and the others, temperature thresholds should be supplied in degrees K, precipitation thresholds in mm
 # thresholds for each of the following are
-# tmax95: 308.15 - tasmax greater than or equal to 95F
-# tmax100: 310.928 - tasmax greater than or equal to 100F
-# tmin32: 273.15 - tasmin less than or equal to 32F
-# tmin28: 270.928 - tasmin less than or equal to 28F
-# pr25: 25.4 - precipitation greater than or equal to 1 inch
-# pr50: 50.8 - precipitation greater than or equal to 2 inches
-# mdrn: 0.254 - precipitation greater than or equal to trace
+# SPIlow, SPEIlow: -1.5 - SPEI, SPI values less than or equal to -1.5
+# SPIhigh, SPEIhigh: 1.5 - SPEI, SPI values greater than or equal to 1.5
 
 ########################################################
 # DON'T CHANGE ANYTHING BELOW THIS LINE!!!
 
 ###########
 # 1. Data Gather and conversion
-histfilelist = system(paste("ls /data2/3to5/I35/",varin,"/EDQM/*historical*.nc",sep=""),intern=T)
-projfilelist = system(paste("ls /data2/3to5/I35/",varin,"/EDQM/*rcp*.nc",sep=""),intern=T)
+histfilelist = system(paste("ls /data2/3to5/I35/",varin,scale,"/EDQM/",varin,scale,"*historical*.nc",sep=""),intern=T)
+projfilelist = system(paste("ls /data2/3to5/I35/",varin,scale,"/EDQM/",varin,scale,"*rcp*.nc",sep=""),intern=T)
 
 filebreakdown = do.call(rbind,strsplit(projfilelist,"_",fixed=TRUE))
 filebreakdown2 = do.call(rbind,strsplit(filebreakdown[,3],"-",fixed=TRUE))
@@ -72,29 +68,38 @@ rm(filebreakdown3)
 rm(filebreakdown2)
 rm(filebreakdown)
 
-dates = seq(as.Date("1981-01-01"),as.Date("2005-12-31"),by="day")
+dates = seq(as.Date("1981-01-15"),as.Date("2005-12-15"),by="month")
 
 for(i in 1:length(histfilelist)){
   ptm = proc.time()
   message("Starting work on file ",histfilelist[i])
-  if(histfilebreakdown$GCM[i]=="MPI-ESM-LR"){
-    noleap=FALSE
-  } else {
-    noleap=TRUE
-  }
-  if(noleap==FALSE) datesin = dates
-  if(noleap==TRUE) datesin = dates[-which(substr(dates,6,10)=="02-29")]
+  datesin = dates
   
-  yearlyoutput = netcdftoyearlycalcs(histfilelist[i],varname=varin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(1981,2005),datesdataperiod=datesin,appliedfunction=appfunc)
-    
+  test=nc_open(histfilelist[i])
+  vardata = ncvar_get(test,varin)
+  if(varname == "SPEIlow" | varname=="SPIlow") {
+    vardata=ifelse(vardata<=TH,1,0)
+  }
+  if(varname == "SPEIhigh" | varname=="SPIhigh") {
+    vardata=ifelse(vardata>=TH,1,0)
+  }
+  
   if(i==1){
-    lon = yearlyoutput[[1]]
-    lat = yearlyoutput[[2]]
+    lon = ncvar_get(test,"lon")
+    lat = ncvar_get(test,"lat")
     histlist = array(NA,dim=c(length(lon),length(lat),length(histfilelist)))
   }
+  nc_close(test)
   
-  histlist[,,i] = climocalc(yearlyoutput[[3]],yearlydataperiod=c(1981,2005),climoperiod=c(1981,2005))
-  rm(yearlyoutput)
+  years = unique(as.numeric(substr(dates,1,4)))
+  tmp = array(NA,dim=c(length(lon),length(lat),length(years)))
+  for(y in 1:length(years)){
+    yearidx2 = which(as.numeric(substr(dates,1,4))==years[y])
+    tmp[,,y]=apply(vardata[,,yearidx2],c(1,2),mean,na.rm=TRUE)
+    tmp[,,y] = ifelse(is.na(vardata[,,1])==FALSE,tmp[,,y],NA)
+  }
+  
+  histlist[,,i] = apply(tmp,c(1,2),mean,na.rm=TRUE)
   gc()
   ptmend = proc.time()
   message("Finished with file ",i," / ",length(histfilelist))
@@ -104,29 +109,42 @@ for(i in 1:length(histfilelist)){
 ########
 # Future data grab
 
-dates = seq(as.Date("2006-01-01"),as.Date("2099-12-31"),by="day")
-#if(noleap==TRUE) dates = dates[-which(substr(dates,6,10)=="02-29")]
+dates = seq(as.Date("2006-01-15"),as.Date("2099-12-15"),by="month")
+yearsused = 2044:2068
+yearidx = which(as.numeric(substr(dates,1,4))>=2044 & as.numeric(substr(dates,1,4))<=2068)
 
 for(i in 1:length(projfilelist)){
   ptm = proc.time()
   #if(noleap==TRUE) dates = dates[-which(substr(dates,6,10)=="02-29")]
   
-  if(projfilebreakdown$GCM[i]=="MPI-ESM-LR"){
-    noleap=FALSE
-   }else {
-     noleap=TRUE
-  }
-  if(noleap==FALSE) datesin = dates
-  if(noleap==TRUE) datesin = dates[-which(substr(dates,6,10)=="02-29")]
+  datesin = dates
   
-  yearlyoutput = netcdftoyearlycalcs(projfilelist[i],varname=varin,dimnames=c("lon","lat","time"),threscalc=TC,thres=TH,condition=cond,yearlydataperiod=c(2071,2099),datesdataperiod=datesin,appliedfunction=appfunc)
+  test=nc_open(projfilelist[i])
+  vardata = ncvar_get(test,varin,start=c(1,1,yearidx[1]),count=c(-1,-1,length(yearidx)))
+  if(varname == "SPEIlow" | varname=="SPIlow") {
+    vardata=ifelse(vardata<=TH,1,0)
+  }
+  if(varname == "SPEIhigh" | varname=="SPIhigh") {
+    vardata=ifelse(vardata>=TH,1,0)
+  }
   
   if(i==1){
+    lon = ncvar_get(test,"lon")
+    lat = ncvar_get(test,"lat")
     projlist = array(NA,dim=c(length(lon),length(lat),length(projfilelist)))
   }
+  nc_close(test)
   
-  projlist[,,i] = climocalc(yearlyoutput[[3]],yearlydataperiod=c(2071,2099),climoperiod=c(2071,2099))
-  rm(yearlyoutput)
+  years = unique(as.numeric(substr(dates[yearidx],1,4)))
+  tmp = array(NA,dim=c(length(lon),length(lat),length(years)))
+  for(y in 1:length(years)){
+    yearidx2 = which(as.numeric(substr(dates[yearidx],1,4))==years[y])
+    tmp[,,y]=apply(vardata[,,yearidx2],c(1,2),mean,na.rm=TRUE)
+    tmp[,,y] = ifelse(is.na(vardata[,,1])==FALSE,tmp[,,y],NA)
+  }
+  
+  projlist[,,i] = apply(tmp,c(1,2),mean,na.rm=TRUE)
+  
   gc()
   ptmend = proc.time()
   message("Finished with file ",i," / ",length(projfilelist))
@@ -135,6 +153,8 @@ for(i in 1:length(projfilelist)){
 
 ######
 # Difference Calcs
+
+source("/home/woot0002/scripts/analysisfunctions.R")
 
 diffs = array(NA,dim=dim(projlist))
 for(i in 1:length(projfilelist)){
@@ -158,10 +178,10 @@ for(s in 1:length(scens)){
 lon=lon-360
 
 if(is.na(applymask)==FALSE){
-diffs = statemask(diffs,inputlat=lat,inputlon=lon,state=applymask)
-diffsg1 = statemask(diffsg1,inputlat=lat,inputlon=lon,state=applymask)
-projlist = statemask(projlist,inputlat=lat,inputlon=lon,state=applymask)
-histlist = statemask(histlist,inputlat=lat,inputlon=lon,state=applymask)
+  diffs = statemask(diffs,inputlat=lat,inputlon=lon,state=applymask)
+  diffsg1 = statemask(diffsg1,inputlat=lat,inputlon=lon,state=applymask)
+  projlist = statemask(projlist,inputlat=lat,inputlon=lon,state=applymask)
+  histlist = statemask(histlist,inputlat=lat,inputlon=lon,state=applymask)
 } else {
   diffs = list(lon=lon,lat=lat,outputdata=diffs)
   diffsg1 = list(lon=lon,lat=lat,outputdata=diffsg1)
@@ -172,12 +192,12 @@ histlist = statemask(histlist,inputlat=lat,inputlon=lon,state=applymask)
 ################
 # Plotting
 
-diffcolorbar = colorramp(diffs[[3]],colorchoice="browntogreen",Blimit=BINLIMIT,type="difference")
+diffcolorbar = colorramp(diffs[[3]],colorchoice=colorchoicediff,Blimit=BINLIMIT,type="difference",use_fixed_scale=TRUE,fixed_scale = c(-0.2,0.2))
 
 diffs_sort = diffs[[3]][,,order(projfilebreakdown$scen)]
 projfilebreakdown = projfilebreakdown[order(projfilebreakdown$scen),]
 
-pdf(paste("IndividualMembers_",varname,"_",difftype,".pdf",sep=""),onefile=TRUE,width=10,height=10)
+pdf(paste("IndividualMembers_",varname,scale,"_",difftype,".pdf",sep=""),onefile=TRUE,width=10,height=10)
 par(mfrow=c(3,3))
 for(i in 1:length(projfilelist)){
   GCM = projfilebreakdown$GCM[i]
@@ -196,8 +216,8 @@ dev.off()
 scensin = scens[c(1,3)]
 diffsg1_sort = diffsg1[[3]][,,c(1,3)]
 
-pdf(paste("Group1_",varname,"_",difftype,".pdf",sep=""),onefile=TRUE,width=10,height=5)
-diffcolorbar = colorramp(diffsg1[[3]],colorchoice="browntogreen",Blimit=BINLIMIT,type="difference")
+pdf(paste("Group1_",varname,scale,"_",difftype,".pdf",sep=""),onefile=TRUE,width=10,height=5)
+diffcolorbar = colorramp(diffsg1[[3]],colorchoice=colorchoicediff,Blimit=BINLIMIT,type="difference",use_fixed_scale = TRUE,fixed_scale=c(-0.1,0.1))
 
 par(mfrow=c(1,2))
 

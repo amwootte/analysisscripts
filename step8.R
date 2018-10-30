@@ -2,7 +2,7 @@
 # Step 8 analysis 3^5
 # pull time series for location
 
-step8 = function(varname,histfilelist,projfilelist,appfunc,varunits,loc_name,loc_lon,loc_lat,TC,TH,cond,seasonin){
+step8 = function(varname,histfilelist,projfilelist,appfunc,loc_name,loc_lon,loc_lat,TC,TH,cond,seasonin,useobs=FALSE){
 
 # must pass in the following: histfilelist,histfilebreakdown, projfilelist,projfilebreakdown,TC,TH,cond, appfunc, varname, futureperiod,tempperiod,varunits,changeunits,usecompound
 
@@ -60,6 +60,7 @@ rm(filebreakdown3)
 rm(filebreakdown2)
 rm(filebreakdown)
 
+#############
 # 1a- historical calcs
 
 dates = seq(as.Date("1981-01-01"),as.Date("2005-12-31"),by="day")
@@ -131,8 +132,14 @@ for(i in 1:length(histfilelist)){
   }
   
   if(seasonin!="daily"){
+    message("creating histlist")
     histlist[,i] = apply(yearlyoutput[[3]][locstart[1]:locend[1],locstart[2]:locend[2],],3,mean,na.rm=TRUE)
   } else {
+    
+    if(length(yearlyoutput[[3]])>nrow(histlist)){
+      yearlyoutput[[3]] = yearlyoutput[[3]][-which(substr(dates,6,10)=="02-29")]
+    }
+    
     histlist[,i] = yearlyoutput[[3]]
   }
   
@@ -143,7 +150,6 @@ for(i in 1:length(histfilelist)){
   message("Time to complete gathering: ",ptmend[3]-ptm[3]," secs")
 }
 #print(range(histlist,na.rm=TRUE))
-
 
 #############
 # 1b- Future calcs
@@ -191,6 +197,9 @@ for(i in 1:length(projfilelist)){
   if(seasonin!="daily"){
     projlist[,i] = apply(yearlyoutput[[3]][locstart[1]:locend[1],locstart[2]:locend[2],],3,mean,na.rm=TRUE)
   } else {
+    if(length(yearlyoutput[[3]])>nrow(projlist)){
+      yearlyoutput[[3]] = yearlyoutput[[3]][-which(substr(dates,6,10)=="02-29")]
+    }
     projlist[,i] = yearlyoutput[[3]]
   }
 
@@ -200,8 +209,6 @@ for(i in 1:length(projfilelist)){
   message("Finished with file ",i," / ",length(projfilelist))
   message("Time to complete gathering: ",ptmend[3]-ptm[3]," secs")
 }
-
-
 #print(range(projlist,na.rm=TRUE))
 
 ################
@@ -389,12 +396,10 @@ if(includeobs==TRUE & seasonin=="daily"){
   }
 }
 
-
-
 # notes on the order of the ensemble members for the output netcdf file.
 
 #######################
-# 1-d Write out csv time series
+# 1-e Write out csv time series
 
 step8_filename = paste(varname,"_allmem_timeseries_",loc_name,"_",seasonin,".csv",sep="")
 
@@ -465,7 +470,11 @@ ParseArgs <- function(arg.list){
                            "If not provided, the script will throw an error. ")),
     make_option(c("-y", "--loc_lat"), action="store",
                 dest='loc_lat',
-                help=paste("Latitude of the desired location. If not provided, the script will throw an error. "))
+                help=paste("Latitude of the desired location. If not provided, the script will throw an error. ")),
+    make_option(c("-O", "--useobs"), action="store",default=FALSE,
+                dest='useobs',
+                help=paste("Include the historical observations from the METDATA dataset for the same location. ",
+                           "Given METDATA has a finer resolution, a 5 by 5 block around the location is taken compared to a 3x3 block in 3^5."))
   )
   
   description = paste('Given the desired variable name, the list of files (with paths) ', 
@@ -476,7 +485,7 @@ ParseArgs <- function(arg.list){
                    "not required to specify strings.")
   usage = paste("usage: %prog --var varname --histlist histlist --projlist projlist ", 
                 "[-a appfunc] [-T calcthres] [-H thresvalue] [-c condition] [-S seasonin]", 
-                "-n loc_name -x loc_lon -y loc_lat", 
+                "-n loc_name -x loc_lon -y loc_lat [-O useobs]", 
                 " [-h --help]")
   return(parse_args(OptionParser(option_list=option_list, usage=usage, 
                                  description = description, epilogue=epilouge), 
@@ -490,8 +499,7 @@ arg.len <- length(args)
 
 parsed.args <- ParseArgs(args)
 
-step1(varname=parsed.args$varname,histfilelist=parsed.args$histlist,projfilelist=parsed.args$projlist,
-      appfunc=parsed.args$appfunc,difftype=parsed.args$difftype,varunits=parsed.args$varunits,
-      changeunits=parsed.args$changeunits,futureperiod=parsed.args$futureperiod,TC=parsed.args$TC,
-      TH=parsed.args$TH,cond=parsed.args$cond,seasonin=parsed.args$seasonin)
+step8(varname=parsed.args$varname,histfilelist=parsed.args$histlist,projfilelist=parsed.args$projlist,
+      appfunc=parsed.args$appfunc,TC=parsed.args$TC,TH=parsed.args$TH,cond=parsed.args$cond,
+      seasonin=parsed.args$seasonin,useobs=parsed.args$useobs,loc_name=parsed.args$loc_name,loc_lon=parsed.args$loc_lon,loc_lat=parsed.args$loc_lat)
 

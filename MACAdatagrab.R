@@ -19,7 +19,7 @@ distfunc = function(lon,lat,modelgrid){
 ########
 # get model grid information
 
-test = nc_open("/data/static_web/SPTC_Climate_Projections_Data_and_Images/Data/Average_temperatures/Gridpoint_netcdf_all_domain/Observations/Livneh/Max_Min_temperatures_Livneh_1950.nc")
+test = nc_open("/data/static_web/SPTC_Climate_Projections_Data_and_Images/Data/Average_temperatures/Gridpoint_netcdf_all_domain/CMIP5_MACA/CCSM4/historical/Max_Min_temperatures_MACA_CCSM4_historical_1950.nc")
 lonmod = ncvar_get(test,"lon")
 latmod = ncvar_get(test,"lat")
 nc_close(test)
@@ -34,8 +34,8 @@ names(modelgrid) = c("R","C","lon","lat")
 #######
 # Get city locations and set GCM
 
-locations = read.table("/home/woot0002/REUproject/Tickprojectlocations.csv",header=TRUE,sep=",")
-GCM = "CCSM4"
+locations = read.table("/home/woot0002/REUproject/ticklocationdata.csv",header=TRUE,sep=",")
+GCM = "CNRM-CM5"
 
 #######
 # Grab temperature and precipitation data for each location.

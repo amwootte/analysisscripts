@@ -18,12 +18,15 @@ source("/home/woot0002/scripts/analysisfunctions.R")
 ###
 # setting variable names
 
-varname = "tmax100"
+varname = "pr50"
 
 if(varname == "tasmax"){ varin="tmmx"; dataunits1 = "degrees_K";}
 
 if(varname == "tasmin"){ varin="tmmn"; dataunits1 = "degrees_K";}
 if(varname == "pr"){ varin="pr"; dataunits1 = "mm";}
+if(varname == "frd"){varin="tmmn"; dataunits1="days"}
+if(varname == "gsl"){varin="tmmx"; dataunits1="days"}
+
 
 if(varname == "tmax100" | varname == "tmax95"){ varin="tmmx"; dataunits1 = "days";}
 if(varname == "tmin32" | varname == "tmin28"){ varin="tmmn"; dataunits1 = "days";}
@@ -60,6 +63,21 @@ for(y in 1:length(years)){
     temp2 = apply(vardata,c(1,2),mean,na.rm=TRUE)
     }
     
+    if(varname=="gsl"){ 
+      test = nc_open(paste("/data4/data/DS_proj/METDATA/tmmn_",years[y],".nc",sep=""))
+      vardata2 = ncvar_get(test,test$var[[1]]$name)
+      nc_close(test)
+      temp2 = matrix(NA,nrow=dim(vardata)[1],ncol=dim(vardata)[2])
+      for(r in 1:length(lat)){
+        for(c in 1:length(lon)){
+          temp2[r,c] = GSLcalc(vardata[r,c,],vardata2[r,c,],inputtimes=time,startdate=startdate)
+          #message("Finished Calculation R ",r," and C ",c)
+        }
+      }  
+      
+    }
+     
+    
     if(varname == "pr"){
       temp2 = apply(vardata,c(1,2),sum,na.rm=TRUE)
       temp2 = ifelse(is.na(vardata[,,1])==TRUE,NA,temp2)
@@ -70,8 +88,8 @@ for(y in 1:length(years)){
       if(varname == "tmax95")  temp = ifelse(vardata>=308.15,1,0)
       if(varname == "tmin32")  temp = ifelse(vardata<=273.15,1,0)
       if(varname == "tmin28")  temp = ifelse(vardata<=270.928,1,0)
-      if(varname == "pr25")  temp = ifelse(vardata>=50.8,1,0)
-      if(varname == "pr50")  temp = ifelse(vardata>=25.4,1,0)
+      if(varname == "pr25")  temp = ifelse(vardata>=25.4,1,0)
+      if(varname == "pr50")  temp = ifelse(vardata>=50.8,1,0)
       if(varname == "mdrn")  temp = ifelse(vardata>=0.254,1,0)
       temp2 = apply(temp,c(1,2),sum,na.rm=TRUE)
       temp2 = ifelse(is.na(vardata[,,1])==TRUE,NA,temp2)
@@ -93,7 +111,7 @@ for(y in 1:length(years)){
       for(r in 1:length(lat)){
         for(c in 1:length(lon)){
           message("Working on r ",r," and c ",c)
-         temp2[r,c] = lastfreeze(vardata[r,c,],startdate=startdate,inputtimes=times[yearidx])
+         temp2[r,c] = lastfreeze(vardata[r,c,],startdate=startdate,inputtimes=times)
         }
       }
       temp2 = ifelse(is.na(vardata[,,1])==TRUE,NA,temp2)

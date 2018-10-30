@@ -55,20 +55,23 @@ library(maps)
 library(fields)
 library(sp)
 
-source("analysisfunctions.R")
+#source("/home/woot0002/scripts/analysisfunctions.R")
 
 # set arguments
-varname = "gsl" # these are all required arguments for step 1
-steps = c(1:7) # others can be set based upon what varname is.
+varname = "cdd" # these are all required arguments for step 1
+steps = c(1,2,7) # others can be set based upon what varname is.
 difftype = "absolute"
 tempperiod = "annual"
-futureperiod = c(2071,2099)
+futureperiod = c(2041,2070)
 varunits = "days"
 changeunits = "days"
 BINLIMIT=30
 colorchoicediff = "bluetored"
 diffbartype = "difference"
 seasonin = "ann"
+useobs=  FALSE
+
+
 
 step1_filename = NA # if these are NA and you are not running step1 or step2, then other options that rely on these will break
 step2_filename = NA
@@ -80,9 +83,9 @@ lat = c(33,35)
 regiontype = "box"
 regionname = "RedRiver"
 
-locationname = "OKC" # step 7 required variables
-loc_lon = 262.4836
-loc_lat = 35.4676
+locationname = "BatonRouge" # step 7 required variables
+loc_lon = 268.8129
+loc_lat = 30.4515
 
 ############
 
@@ -99,7 +102,7 @@ if(4 %in% steps | 5 %in% steps){
 }
 
 varin = varname
-if(varname=="tmax95" | varname=="tmax100") varin="tasmax" # for the tmax95 and other threshold variables, you need to use the base variable and calculate the number of days matching the threshold.
+if(varname=="tmax90" | varname=="tmax95" | varname=="tmax100") varin="tasmax" # for the tmax95 and other threshold variables, you need to use the base variable and calculate the number of days matching the threshold.
 if(varname=="tmin32" | varname=="tmin28" | varname=="frd") varin="tasmin"
 if(varname=="pr25" | varname=="pr50" | varname=="mdrn" | varname=="rx1day" | varname=="rx5day" | varname=="cdd" | varname=="cwd") varin="pr"
 
@@ -134,6 +137,14 @@ if(varname == "gsl"){
   varin = "tasmax"
 }
 
+if(varname == "tmax90"){
+  TC=TRUE
+  TH = 305.372
+  cond = "gte"
+  appfunc = "sum"
+}
+
+
 if(varname == "tmax95"){
   TC=TRUE
   TH = 308.15
@@ -143,7 +154,7 @@ if(varname == "tmax95"){
 
 if(varname == "tmax100"){
   TC=TRUE
-  TH = 310.98
+  TH = 310.928
   cond = "gte"
   appfunc = "sum"
 }
@@ -301,6 +312,15 @@ if(6 %in% steps){
 if(7 %in% steps){
   # single location calculation
   command = paste("Rscript step7.R -i ",step1_filename," -s ",paste(histnotes,collapse=",")," -p ",paste(projnotes,collapse=",")," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
+  system(command,intern=TRUE)
+}
+
+########
+
+if(8 %in% steps){
+  # run individual calc
+  if(TC==FALSE) command = paste("Rscript step8.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
+  if(TC==TRUE) command = paste("Rscript step8.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
   system(command,intern=TRUE)
 }
 
