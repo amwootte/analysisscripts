@@ -519,7 +519,7 @@ netcdftoyearlycombocalcs = function(filenames,varnames=c(),dimnames=c("lon","lat
       lon = ncvar_get(test,dimnames[1])
       times = ncvar_get(test,dimnames[3])
       domainmask = ifelse(is.na(tempdata1[,,1])==FALSE,1,0)
-      startdate = substr(test$dim[[4]]$units,12,21)
+      startdate = substr(test$dim[[dimnames[3]]]$units,12,21)
     }
     nc_close(test)
     
@@ -585,7 +585,7 @@ netcdffreqcalcs = function(filename,varname,dimnames=c("lon","lat","time"),yearl
       lon = ncvar_get(test,dimnames[1])
       times = ncvar_get(test,dimnames[3])
       domainmask = ifelse(is.na(tempdata[,,1])==FALSE,1,0)
-      startdate = substr(test$dim[[4]]$units,12,21)
+      startdate = substr(test$dim[[dimnames[3]]]$units,12,21)
     }
     nc_close(test)
     
@@ -638,7 +638,7 @@ netcdftoyearlycalcs = function(filename,varname,dimnames=c("lon","lat","time"),t
       lon = ncvar_get(test,dimnames[1])
       times = ncvar_get(test,dimnames[3])
       domainmask = ifelse(is.na(tempdata[,,1])==FALSE,1,0)
-      startdate = substr(test$dim[[4]]$units,12,21)
+      startdate = substr(test$dim[[dimnames[3]]]$units,12,21)
     }
     nc_close(test)
     

@@ -5,19 +5,19 @@
 ###
 # Analysis Steps
 # 
-# 1) Individual Member Calculation of Historical and Projected Values and Projected Change
+# 1) Individual Member Calculation of Historical and Projected Values and Projected Change (var_calc.R)
 #   a) Historical Value Calculation
 #   b) Projected Value Calculation
 #   c) Projected Change Calculation
 #   d) Write out files
-# 2) Convert to Ensemble Means by Emissions Scenario
+# 2) Convert to Ensemble Means by Emissions Scenario (ens_mean.R)
 #   a) Ensemble Mean Calculation
 #   b) Write out files
-# 3) Produce Imagery for Individual Members - inputs needed: individual members calculation
-# 4) Produce Imagery for Ensemble Means - inputs needed: ensemble means
-# 5) File format conversion - inputs needed: ensemble mean calculation
-# 6) Area Range Calculation - inputs needed: individual members calculation
-# 7) Location Point Calculation - inputs needed: individual members calculation
+# 3) Produce Imagery for Individual Members - inputs needed: individual members calculation (plot_indiv.R)
+# 4) Produce Imagery for Ensemble Means - inputs needed: ensemble means (plot_ens.R)
+# 5) File format conversion - inputs needed: ensemble mean calculation (format_change.R)
+# 6) Area Range Calculation - inputs needed: individual members calculation (area_range.R)
+# 7) Location Point Calculation - inputs needed: individual members calculation (point_calcs.R)
 #
 # Steps 3-7 require inputs which are the result of 1 and 2
 #
@@ -55,11 +55,11 @@ library(maps)
 library(fields)
 library(sp)
 
-#source("/home/woot0002/scripts/analysisfunctions.R")
+source("/home/woot0002/scripts/analysisfunctions.R")
 
 # set arguments
-varname = "cdd" # these are all required arguments for step 1
-steps = c(1,2,7) # others can be set based upon what varname is.
+varname = "tmax100" # these are all required arguments for step 1
+steps = c(1,2,3,4,6,7) # others can be set based upon what varname is.
 difftype = "absolute"
 tempperiod = "annual"
 futureperiod = c(2041,2070)
@@ -70,8 +70,6 @@ colorchoicediff = "bluetored"
 diffbartype = "difference"
 seasonin = "ann"
 useobs=  FALSE
-
-
 
 step1_filename = NA # if these are NA and you are not running step1 or step2, then other options that rely on these will break
 step2_filename = NA
@@ -230,8 +228,8 @@ projfilelist = system(paste("ls /data2/3to5/I35/",varin,"/*/*rcp*.nc",sep=""),in
 filebreakdown = do.call(rbind,strsplit(projfilelist,"_",fixed=TRUE))
 filebreakdown2 = do.call(rbind,strsplit(filebreakdown[,3],"-",fixed=TRUE))
 filebreakdown3 = data.frame(filebreakdown[,1:2],filebreakdown2,filebreakdown[,4:7])
-filebreakdown3$GCM = rep(c("CCSM4","MIROC5","MPI-ESM-LR"),each=9)
-filebreakdown3$obs = rep(c("Daymet","Livneh","PRISM"),9)
+filebreakdown3$GCM = rep(rep(c("CCSM4","MIROC5","MPI-ESM-LR"),each=9),length(unique(filebreakdown3[,4])))
+filebreakdown3$obs = rep(rep(c("Daymet","Livneh","PRISM"),9),length(unique(filebreakdown3[,4])))
 filebreakdown3 = filebreakdown3[,-c(3,8,9)]
 names(filebreakdown3) = c("var","tempres","DS","code","scen","experiment","GCM","obs")
 projfilebreakdown = filebreakdown3
@@ -240,8 +238,8 @@ rm(filebreakdown3)
 filebreakdown = do.call(rbind,strsplit(histfilelist,"_",fixed=TRUE))
 filebreakdown2 = do.call(rbind,strsplit(filebreakdown[,3],"-",fixed=TRUE))
 filebreakdown3 = data.frame(filebreakdown[,1:2],filebreakdown2,filebreakdown[,4:7])
-filebreakdown3$GCM = rep(c("CCSM4","MIROC5","MPI-ESM-LR"),each=3)
-filebreakdown3$obs = rep(c("Daymet","Livneh","PRISM"),3)
+filebreakdown3$GCM = rep(rep(c("CCSM4","MIROC5","MPI-ESM-LR"),each=3),length(unique(filebreakdown3[,4])))
+filebreakdown3$obs = rep(rep(c("Daymet","Livneh","PRISM"),3),length(unique(filebreakdown3[,4])))
 filebreakdown3 = filebreakdown3[,-c(3,8,9)]
 names(filebreakdown3) = c("var","tempres","DS","code","scen","experiment","GCM","obs")
 histfilebreakdown = filebreakdown3
@@ -252,6 +250,9 @@ rm(filebreakdown)
 projnotes = paste(projfilebreakdown$GCM,projfilebreakdown$DS,projfilebreakdown$obs,projfilebreakdown$scen,sep="_")
 histnotes = paste(histfilebreakdown$GCM,histfilebreakdown$DS,histfilebreakdown$obs,sep="_")
 
+projnotes = paste(projnotes,collapse=",")
+histnotes = paste(histnotes,collapse=",")
+
 histlist = paste(histfilelist,collapse=",")
 projlist = paste(projfilelist,collapse=",")
 
@@ -259,8 +260,9 @@ projlist = paste(projfilelist,collapse=",")
 
 if(1 %in% steps){
   # run individual calc
-  if(TC==FALSE) command = paste("Rscript step1.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -S ",seasonin,sep="")
-  if(TC==TRUE) command = paste("Rscript step1.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin,sep="")
+  if(TC==FALSE) command = paste("Rscript var_calc.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -S ",seasonin,sep="")
+  if(TC==TRUE) command = paste("Rscript var_calc.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin,sep="")
+  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
   step1_filename = paste("/data2/3to5/I35/all_mems/",varname,"_allmem_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".nc",sep="")
 }
@@ -269,7 +271,8 @@ if(1 %in% steps){
 
 if(2 %in% steps){
   # run ensemble mean calcs
-  command = paste("Rscript step2.R -i ",step1_filename," -p ",paste(projnotes,collapse=","),sep="")
+  command = paste("Rscript ens_mean.R -i ",step1_filename," -p ",projnotes," -d ",histnotes," -g DS", sep="")
+  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
   step2_filename = paste("/data2/3to5/I35/ens_means/",varname,"_ensmean_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".nc",sep="")
 }
@@ -278,7 +281,9 @@ if(2 %in% steps){
 
 if(3 %in% steps){
   # run individual member imagery
-  command = paste("Rscript step3.R -i ",step1_filename," -p ",paste(projnotes,collapse=",")," -c ",colorchoicediff, " -d ", diffbartype," -b ",BINLIMIT,sep="")
+  #step1_filename = "/data2/3to5/I35/all_mems/tasmax_allmem_absolute_2041-2070_ann.nc"
+  command = paste("Rscript plot_indiv.R -i ",step1_filename," -p ",projnotes," -c ",colorchoicediff, " -d ", diffbartype," -b ",BINLIMIT,sep="")
+  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 
@@ -286,7 +291,7 @@ if(3 %in% steps){
 
 if(4 %in% steps){
   # run ensemble mean imagery
-  command = paste("Rscript step4.R -i ",step2_filename," -c ",colorchoicediff, " -d ", diffbartype," -b ",BINLIMIT,sep="")
+  command = paste("Rscript plot_ens.R -i ",step2_filename," -c ",colorchoicediff, " -d ", diffbartype," -b ",BINLIMIT,sep="")
   system(command,intern=TRUE)
 }
 
@@ -294,7 +299,7 @@ if(4 %in% steps){
 
 if(5 %in% steps){
   # run ensemble mean file format conversion
-  command = paste("Rscript step5.R -i ",step2_filename," -o ",outfileformat,sep="")
+  command = paste("Rscript format_change.R -i ",step2_filename," -o ",outfileformat,sep="")
   system(command,intern=TRUE)
 }
 
@@ -302,8 +307,10 @@ if(5 %in% steps){
 
 if(6 %in% steps){
   # area range calculation
-  if(regiontype=="box") command = paste("Rscript step6.R -i ",step1_filename," -s ",paste(histnotes,collapse=",")," -p ",paste(projnotes,collapse=",")," -t ",regiontype," -n ",regionname," -x ",paste(lon[1],lon[2],sep=",")," -y ",paste(lat[1],lat[2],sep=","),sep="")
-  if(regiontype=="shape") command = paste("Rscript step6.R -i ",step1_filename," -s ",paste(histnotes,collapse=",")," -p ",paste(projnotes,collapse=",")," -t ",regiontype," -n ",regionname," -f ",shapefile," -d ",shapedimension," -a ",areaname,sep="")
+  #step1_filename = "/data2/3to5/I35/all_mems/tasmax_allmem_absolute_2041-2070_ann.nc"
+  if(regiontype=="box") command = paste("Rscript area_range.R -i ",step1_filename," -s ",histnotes," -p ",projnotes," -t ",regiontype," -n ",regionname," -x ",paste(lon[1]+360,lon[2]+360,sep=",")," -y ",paste(lat[1],lat[2],sep=","),sep="")
+  if(regiontype=="shape") command = paste("Rscript area_range.R -i ",step1_filename," -s ",histnotes," -p ",projnotes," -t ",regiontype," -n ",regionname," -f ",shapefile," -d ",shapedimension," -a ",areaname,sep="")
+  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 
@@ -311,7 +318,9 @@ if(6 %in% steps){
 
 if(7 %in% steps){
   # single location calculation
-  command = paste("Rscript step7.R -i ",step1_filename," -s ",paste(histnotes,collapse=",")," -p ",paste(projnotes,collapse=",")," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
+  #step1_filename = "/data2/3to5/I35/all_mems/tasmax_allmem_absolute_2041-2070_ann.nc"
+  command = paste("Rscript point_calcs.R -i ",step1_filename," -s ",histnotes," -p ",projnotes," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
+  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 
@@ -319,8 +328,8 @@ if(7 %in% steps){
 
 if(8 %in% steps){
   # run individual calc
-  if(TC==FALSE) command = paste("Rscript step8.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
-  if(TC==TRUE) command = paste("Rscript step8.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
+  if(TC==FALSE) command = paste("Rscript ts_pull.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
+  if(TC==TRUE) command = paste("Rscript ts_pull.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
   system(command,intern=TRUE)
 }
 
