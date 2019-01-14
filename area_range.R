@@ -174,8 +174,8 @@ area_range = function(step1_filename,histnotes,projnotes,regionname,regiontype,b
 # Argument parser
 
 library(optparse)
-source("analysisfunctions.R")
-source("colorramp.R")
+source("/data2/3to5/I35/scripts/analysisfunctions.R")
+source("/data2/3to5/I35/scripts/colorramp.R")
 library(ncdf4)
 library(maps)
 library(fields)

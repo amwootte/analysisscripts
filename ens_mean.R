@@ -162,7 +162,7 @@ return(step2_filename)
 # Argument parser
 
 library(optparse)
-source("analysisfunctions.R")
+source("/data2/3to5/I35/scripts/analysisfunctions.R")
 library(ncdf4)
 library(maps)
 library(fields)

@@ -36,7 +36,7 @@
 # 3) steps to run -- c(1:7), or c(1,2,5,6,7)
 # 4) applied function -- sum, mean, heatwaves, growing_season_length,max,rx5day,lastfreeze,maxdryspell,maxwetspell
 # 5) difference type -- absolute,relative, or percent
-# 6) Temporal period (either say annual, or say a specific season or month) -- annual, JJA, July
+# 6) seasonin (either say annual, or say a specific season) -- annual, JJA
 # 7) future time period -- c(2041,2070), c(2071,2099)
 # 8) units for historical and projected values -- "degrees_K", "mm"
 # 9) units for projected change -- "degrees_K", "%"
@@ -55,18 +55,18 @@ library(maps)
 library(fields)
 library(sp)
 
-source("/home/woot0002/scripts/analysisfunctions.R")
+source("/data2/3to5/I35/scripts/analysisfunctions.R")
 
 # set arguments
-varname = "tmax100" # these are all required arguments for step 1
+varname = "pr25" # these are all required arguments for step 1
 steps = c(1,2,3,4,6,7) # others can be set based upon what varname is.
 difftype = "absolute"
-tempperiod = "annual"
+#tempperiod = "annual"
 futureperiod = c(2041,2070)
 varunits = "days"
 changeunits = "days"
 BINLIMIT=30
-colorchoicediff = "bluetored"
+colorchoicediff = "browntogreen"
 diffbartype = "difference"
 seasonin = "ann"
 useobs=  FALSE
@@ -222,8 +222,8 @@ if(varname == "cwd"){
 
 ###########
 # 1. Data Gather and conversion
-histfilelist = system(paste("ls /data2/3to5/I35/",varin,"/*/*00_historical*.nc",sep=""),intern=T)
-projfilelist = system(paste("ls /data2/3to5/I35/",varin,"/*/*rcp*.nc",sep=""),intern=T)
+histfilelist = system(paste("ls /data2/3to5/I35/",varin,"/*/",varin,"_day_*00_historical*.nc",sep=""),intern=T)
+projfilelist = system(paste("ls /data2/3to5/I35/",varin,"/*/",varin,"_day_*rcp*.nc",sep=""),intern=T)
 
 filebreakdown = do.call(rbind,strsplit(projfilelist,"_",fixed=TRUE))
 filebreakdown2 = do.call(rbind,strsplit(filebreakdown[,3],"-",fixed=TRUE))
@@ -262,7 +262,7 @@ if(1 %in% steps){
   # run individual calc
   if(TC==FALSE) command = paste("Rscript var_calc.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -S ",seasonin,sep="")
   if(TC==TRUE) command = paste("Rscript var_calc.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin,sep="")
-  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand1.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
   step1_filename = paste("/data2/3to5/I35/all_mems/",varname,"_allmem_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".nc",sep="")
 }
@@ -272,7 +272,7 @@ if(1 %in% steps){
 if(2 %in% steps){
   # run ensemble mean calcs
   command = paste("Rscript ens_mean.R -i ",step1_filename," -p ",projnotes," -d ",histnotes," -g DS", sep="")
-  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand2.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
   step2_filename = paste("/data2/3to5/I35/ens_means/",varname,"_ensmean_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".nc",sep="")
 }
@@ -283,7 +283,7 @@ if(3 %in% steps){
   # run individual member imagery
   #step1_filename = "/data2/3to5/I35/all_mems/tasmax_allmem_absolute_2041-2070_ann.nc"
   command = paste("Rscript plot_indiv.R -i ",step1_filename," -p ",projnotes," -c ",colorchoicediff, " -d ", diffbartype," -b ",BINLIMIT,sep="")
-  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand3.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 
@@ -292,6 +292,7 @@ if(3 %in% steps){
 if(4 %in% steps){
   # run ensemble mean imagery
   command = paste("Rscript plot_ens.R -i ",step2_filename," -c ",colorchoicediff, " -d ", diffbartype," -b ",BINLIMIT,sep="")
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand4.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 
@@ -300,6 +301,7 @@ if(4 %in% steps){
 if(5 %in% steps){
   # run ensemble mean file format conversion
   command = paste("Rscript format_change.R -i ",step2_filename," -o ",outfileformat,sep="")
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand5.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 
@@ -310,7 +312,7 @@ if(6 %in% steps){
   #step1_filename = "/data2/3to5/I35/all_mems/tasmax_allmem_absolute_2041-2070_ann.nc"
   if(regiontype=="box") command = paste("Rscript area_range.R -i ",step1_filename," -s ",histnotes," -p ",projnotes," -t ",regiontype," -n ",regionname," -x ",paste(lon[1]+360,lon[2]+360,sep=",")," -y ",paste(lat[1],lat[2],sep=","),sep="")
   if(regiontype=="shape") command = paste("Rscript area_range.R -i ",step1_filename," -s ",histnotes," -p ",projnotes," -t ",regiontype," -n ",regionname," -f ",shapefile," -d ",shapedimension," -a ",areaname,sep="")
-  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand6.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 
@@ -320,7 +322,7 @@ if(7 %in% steps){
   # single location calculation
   #step1_filename = "/data2/3to5/I35/all_mems/tasmax_allmem_absolute_2041-2070_ann.nc"
   command = paste("Rscript point_calcs.R -i ",step1_filename," -s ",histnotes," -p ",projnotes," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
-  #write.table(command,"/home/woot0002/testcommand.txt",sep=",",row.names=FALSE)
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand7.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 
@@ -330,6 +332,7 @@ if(8 %in% steps){
   # run individual calc
   if(TC==FALSE) command = paste("Rscript ts_pull.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
   if(TC==TRUE) command = paste("Rscript ts_pull.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand8.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 

@@ -60,8 +60,8 @@ rf <- writeRaster(dataras, filename=paste("/data2/3to5/I35/GeoTIFFs/",varname,"_
 # library loading and option parsing
 
 library(optparse)
-source("analysisfunctions.R")
-source("colorramp.R")
+source("/data2/3to5/I35/scripts/analysisfunctions.R")
+source("/data2/3to5/I35/scripts/colorramp.R")
 library(ncdf4)
 library(rgdal)
 library(raster)

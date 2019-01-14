@@ -99,8 +99,8 @@ write.table(projchangedat,file=filename,row.names=FALSE,sep=",")
 # Argument parser
 
 library(optparse)
-source("/home/woot0002/scripts/analysisfunctions.R")
-source("colorramp.R")
+source("/data2/3to5/I35/scripts/analysisfunctions.R")
+source("/data2/3to5/I35/scripts/colorramp.R")
 library(ncdf4)
 library(maps)
 library(fields)
