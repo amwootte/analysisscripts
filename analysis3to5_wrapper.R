@@ -58,15 +58,15 @@ library(sp)
 source("/data2/3to5/I35/scripts/analysisfunctions.R")
 
 # set arguments
-varname = "pr25" # these are all required arguments for step 1
-steps = c(1,2,3,4,6,7) # others can be set based upon what varname is.
+varname = "heatwaves" # these are all required arguments for step 1
+steps = c(1,2,3,4) # others can be set based upon what varname is.
 difftype = "absolute"
 #tempperiod = "annual"
-futureperiod = c(2041,2070)
-varunits = "days"
-changeunits = "days"
+futureperiod = c(2071,2099)
+varunits = "events_per_year"
+changeunits = "events_per_year"
 BINLIMIT=30
-colorchoicediff = "browntogreen"
+colorchoicediff = "bluetored"
 diffbartype = "difference"
 seasonin = "ann"
 useobs=  FALSE
@@ -84,6 +84,9 @@ regionname = "RedRiver"
 locationname = "BatonRouge" # step 7 required variables
 loc_lon = 268.8129
 loc_lat = 30.4515
+
+########################################################
+# DON'T CHANGE ANYTHING BELOW THIS LINE!!!
 
 ############
 
@@ -260,8 +263,8 @@ projlist = paste(projfilelist,collapse=",")
 
 if(1 %in% steps){
   # run individual calc
-  if(TC==FALSE) command = paste("Rscript var_calc.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -S ",seasonin,sep="")
-  if(TC==TRUE) command = paste("Rscript var_calc.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin,sep="")
+  if(TC==FALSE) command = paste("Rscript /data2/3to5/I35/scripts/var_calc.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -S ",seasonin,sep="")
+  if(TC==TRUE) command = paste("Rscript /data2/3to5/I35/scripts/var_calc.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -d ",difftype," -u ",varunits," -x ",changeunits," -f ",futureperiod[1],",",futureperiod[2]," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin,sep="")
   #write.table(command,"/data2/3to5/I35/scripts/testcommand1.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
   step1_filename = paste("/data2/3to5/I35/all_mems/",varname,"_allmem_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".nc",sep="")

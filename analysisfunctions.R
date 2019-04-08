@@ -2,7 +2,7 @@
 #
 # Analysis functions
 
-source("/home/woot0002/scripts/climdex.R")
+source("/data2/3to5/I35/scripts/climdex.R")
 
 ####
 
@@ -71,7 +71,13 @@ netcdftodailypointseries = function(filename,varname,dimnames=c("lon","lat","tim
 ####
 
 netcdfcombocalcs = function(filename,varname="tasmax",dimnames=c("lon","lat","time"),yearlydataperiod=c(1981,2005),datesdataperiod=seq(as.Date("1981-01-01"),as.Date("2005-12-31"),by="day"),combofunction="growing_season_length"){
-                            
+  #filename=histfilelist[1]
+  #varname=varin
+  #dimnames=c("lon","lat","time")
+  #yearlydataperiod=c(1981,2005)
+  #datesdataperiod=datesin
+  #combofunction=appfunc
+  
   file1 = filename
   #message(file1)
   #message(varname)
@@ -79,20 +85,19 @@ netcdfcombocalcs = function(filename,varname="tasmax",dimnames=c("lon","lat","ti
   if(varname=="tasmax"){
     message("tasmax provided, figuring out correct tasmin file")
     filesplit = do.call("c",strsplit(file1,"/",fixed=TRUE))
-    nameend = substr(filesplit[length(filesplit)],nchar(varname)+1,nchar(filesplit[length(filesplit)]))
-    #print(nameend)
-    file2 = paste("/",filesplit[2],"/",filesplit[3],"/",filesplit[4],"/tasmin/",filesplit[6],"/tasmin",nameend,sep="")
-    file2split = do.call("c",strsplit(file2,"txp",fixed=TRUE))
-    file2 = paste(file2split[1],"tnp",file2split[2],sep="")
+    filesplit2 = strsplit(filesplit[length(filesplit)],"_")[[1]]
+    splitpart = strsplit(filesplit2[3],"-")[[1]]
+    findthis = paste("tasmin_day_*-",splitpart[2],"-",splitpart[3],"_",paste(filesplit2[4:length(filesplit2)],collapse="_"),sep="")
+    file2 = system(paste("ls /",filesplit[2],"/",filesplit[3],"/",filesplit[4],"/tasmin/",filesplit[6],"/",findthis,sep=""),intern=TRUE)
     message("file 1 is tasmax, file 2 is tasmin")
   }
                             
   if(varname=="tasmin"){
     filesplit = do.call("c",strsplit(file1,"/",fixed=TRUE))
-    nameend = substr(filesplit[length(filesplit)],nchar(varname)+1,nchar(filesplit[length(filesplit)]))
-    file2 = paste("/",filesplit[2],"/",filesplit[3],"/",filesplit[4],"/tasmax/",filesplit[6],"/tasmax",nameend,sep="")
-    file2split = do.call("c",strsplit(file2,"tnp",fixed=TRUE))
-    file2 = paste(file2split[1],"txp",file2split[2],sep="")
+    filesplit2 = strsplit(filesplit[length(filesplit)],"_")[[1]]
+    splitpart = strsplit(filesplit2[3],"-")[[1]]
+    findthis = paste("tasmax_day_*-",splitpart[2],"-",splitpart[3],"_",paste(filesplit2[4:length(filesplit2)],collapse="_"),sep="")
+    file2 = system(paste("ls /",filesplit[2],"/",filesplit[3],"/",filesplit[4],"/tasmax/",filesplit[6],"/",findthis,sep=""),intern=TRUE)
     message("file 1 is tasmin, file 2 is tasmax, switching the order")
     tmpfile1 = file2
     tmpfile2 = file1
@@ -102,12 +107,13 @@ netcdfcombocalcs = function(filename,varname="tasmax",dimnames=c("lon","lat","ti
   }
                             
   if(combofunction=="heatwaves"){
-    splitname = do.call("c",strsplit(nameend,"_",fixed=TRUE))
-    nameuse = paste(substr(splitname[3],9,15),"0",substr(splitname[3],17,nchar(splitname[3])),"_historical_",splitname[5],"_",splitname[6],"_19810101-20051231",sep="")
-    q95list = system("ls /data2/3to5/I35/q95/*",intern=TRUE)
-    idx = grep(nameuse,q95list)
-    file3 = q95list[idx[1]] # tasmax historical q95
-    file4 = q95list[idx[2]] # tasmin historical q95
+    #splitname = do.call("c",strsplit(nameend,"_",fixed=TRUE))
+    #nameuse = paste(substr(splitname[3],9,15),"0",substr(splitname[3],17,nchar(splitname[3])),"_historical_",splitname[5],"_",splitname[6],"_19810101-20051231",sep="")
+    #q95list = system("ls /data2/3to5/I35/q95/*",intern=TRUE)
+    findthis2 = paste("*-",splitpart[2],"-",substr(splitpart[3],1,2),"*",substr(splitpart[3],4,4),"*.nc",sep="")
+    q95list = system(paste("ls /data2/3to5/I35/q95/",findthis2,sep=""),intern=TRUE)
+    file3 = q95list[grep("tasmax",q95list)] # tasmax historical q95
+    file4 = q95list[grep("tasmin",q95list)] # tasmin historical q95
   }
                             
   years = yearlydataperiod[1]:yearlydataperiod[2]
@@ -126,7 +132,7 @@ netcdfcombocalcs = function(filename,varname="tasmax",dimnames=c("lon","lat","ti
       lon = ncvar_get(test,dimnames[1])
       times = ncvar_get(test,dimnames[3])
       domainmask = ifelse(is.na(tempdata1[,,1])==FALSE,1,0)
-      startdate = substr(test$dim[[4]]$units,12,21)
+      startdate = substr(test$dim[[dimnames[3]]]$units,12,21)
     }
     nc_close(test)
                             
@@ -484,6 +490,10 @@ netcdftoseasonalcalcs = function(filename,varname,dimnames=c("lon","lat","time")
     if(appliedfunction=="mean") yearlydat[,,y] = apply(tempdata,c(1,2),mean,na.rm=TRUE)
     if(appliedfunction=="sum") {
       yearlydat[,,y] = apply(tempdata,c(1,2),sum,na.rm=TRUE)
+      yearlydat[,,y] = ifelse(domainmask==1,yearlydat[,,y],NA)
+    }
+    if(appliedfunction=="max"){
+      yearlydat[,,y] = apply(tempdata,c(1,2),max,na.rm=TRUE)
       yearlydat[,,y] = ifelse(domainmask==1,yearlydat[,,y],NA)
     }
     rm(tempdata)

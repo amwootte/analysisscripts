@@ -145,10 +145,12 @@ spell_length_calc = function(data_vec,premasked,cond,spell_len=3,thold=0.254,out
     if(outtype=="ratio") spellfreq = length(which(event_lengths>=spell_len))/length(event_lengths)
     if(outtype=="count") spellfreq = length(which(event_lengths>=spell_len))
     if(outtype=="max") spellfreq = max(event_lengths,na.rm=TRUE)
+    if(outtype=="mean") spellfreq = mean(event_lengths,na.rm=TRUE)
   } else {
     if(outtype=="ratio") spellfreq = 1
     if(outtype=="count") spellfreq = round(length(eventdays)/spell_len)
     if(outtype=="max") spellfreq = length(data_vec)
+    if(outtype=="mean") spellfreq = length(data_vec)/2
   }
   return(spellfreq)
   } else {

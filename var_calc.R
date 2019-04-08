@@ -19,15 +19,15 @@ var_calc = function(varname,histfilelist,projfilelist,appfunc,difftype,varunits,
 # TH - threshold value, only used if TC is TRUE. Default is NA
 # cond - condition connected with the threshold. Used if TC is TRUE. gt,gte,lt,lte are options
   
-  #varname = "tasmax"
-  #futureperiod = "2041,2070"
+  #varname = "rx1day"
+  #futureperiod = "2071,2099"
   #histfilelist = histlist
   #projfilelist = projlist
-  #appfunc = "mean"
+  #appfunc = "max"
   #difftype = "absolute"
-  #varunits = "K"
-  #changeunits = "K"
-  #seasonin = "ann"
+  #varunits = "mm"
+  #changeunits = "mm"
+  #seasonin = "SON"
   #TC = FALSE
   #TH = NA
   
@@ -38,7 +38,7 @@ var_calc = function(varname,histfilelist,projfilelist,appfunc,difftype,varunits,
   varin = varname
   if(varname=="tmax90" | varname=="tmax95" | varname=="tmax100") varin="tasmax" # for the tmax95 and other threshold variables, you need to use the base variable and calculate the number of days matching the threshold.
   if(varname=="tmin32" | varname=="tmin28" | varname=="frd") varin="tasmin"
-  if(varname=="pr25" | varname=="pr50" | varname=="mdrn" | varname=="rx1day" | varname=="rx5day" | varname=="cdd" | varname=="cwd") varin="pr"
+  if(varname=="pr25" | varname=="pr50" | varname=="mdrn" | varname=="rnnmm" | varname=="rx1day" | varname=="rx5day" | varname=="cdd" | varname=="cwd") varin="pr"
   
   if(varname=="heatwaves" | varname=="gsl"){
     if(length(grep("tasmax",projfilelist))==length(projfilelist)) varin="tasmax"
