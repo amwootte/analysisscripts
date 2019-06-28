@@ -75,7 +75,7 @@ for(i in 1:nrow(pointstorun)){
         }
       }
       
-      RESULTS = calc_si(TMAX,TMIN,lat[i])
+      RESULTS = calc_si(TMAX,TMIN,lat[C])
       
       EFSout[R,C,] = RESULTS$FSmat[,1]
       LFSout[R,C,] = RESULTS$FSmat[,2]
