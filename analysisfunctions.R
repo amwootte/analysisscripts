@@ -799,11 +799,12 @@ obs_colorramp = function(obs,colorchoice,Blimit){
 
 colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_scale = FALSE, fixed_scale=c(-100,100)){
   
-  #inputdata=diffs[[3]]
-  #colorchoice="bluetored"
-  #Blimit = 30
+  #inputdata=c(dpku,dpks)
+  #colorchoice="redtowhite"
+  #Blimit = 20
   #type="difference"
-  #use_fixed_scale = FALSE
+  #use_fixed_scale = TRUE
+  #fixed_scale = c(0,1)
   
   if(use_fixed_scale==FALSE){
     message("Not using a fixed scale")
@@ -838,16 +839,17 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
   if(type=="raw"){centerpoint=datarange[1]; startpoint=datarange[1]; message("type=raw")}
   
   breakcheck = 1
-  breaklist = c(0.0001,0.0002,0.00025,0.0005,0.001,0.002,0.0025,0.005,0.01,0.02,0.025,0.05,0.1,0.2,0.25,0.3,0.5,1,2,3,4,5,10,20,25,30,50,100,200,250,300,500,1000)
+  breaklist = c(0.0001,0.0002,0.00025,0.0003,0.0005,0.001,0.002,0.0025,0.003,0.005,0.01,0.02,0.025,0.03,0.05,0.1,0.2,0.25,0.3,0.5,1,2,3,4,5,10,20,25,30,50,100,200,250,300,500,1000)
   
   actualbins = diff(datarange)/breaklist
-  actidx = which(actualbins<Blimit)
+  actidx = which(actualbins<=Blimit)
   dataact = actualbins[actidx]-floor(actualbins[actidx])
   
   if(any(dataact<=1E-14)==TRUE){
     message("exact match for bins")
     dataidx = which(dataact<=1E-14)
     breakcheck=actidx[dataidx[1]]
+    #breakcheck=actidx[dataidx[length(dataidx)]]
   } else {
     message("no exact match going through while loop")
     checkpoint = any(dataact<=1E-14)
@@ -884,7 +886,7 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
   breaksdiff = c(seq(datarange[1],datarange[2],by=breaklist[breakcheck]))
   
   if(any(breaksdiff==centerpoint)==FALSE & zlimdiff[1]<centerpoint & zlimdiff[2]>centerpoint){
-  idx = which(abs(breaksdiff)==min(abs(breaksdiff)))
+  idx = which(abs(breaksdiff)==min(abs(breaksdiff))) # changed from min to max
   if(length(idx)==1) breaksdiff[idx]=centerpoint
   if(length(idx)>1){
   breaksdiff = c(breaksdiff[1:(idx[1]-1)],centerpoint,breaksdiff[(idx[2]+1):length(breaksdiff)])
@@ -899,6 +901,7 @@ colorramp = function(inputdata,colorchoice,Blimit,type = "difference",use_fixed_
   if(startpoint==centerpoint){
   message("startpoint matches centerpoint")
   if(colorchoice == "whitetored") colorbardiff = colorRampPalette(c("#f5f5f5","#fddbc7","#f4a582","#d6604d","#b2182b","#67001f"))(length(breaksdiff)-1)
+  if(colorchoice == "redtowhite") colorbardiff = colorRampPalette(c("#67001f","#b2182b","#d6604d","#f4a582","#fddbc7","#f5f5f5"))(length(breaksdiff)-1)
   if(colorchoice == "yellowtored") colorbardiff = colorRampPalette(c("#ffffb2","#fed976","#feb24c","#fd8d3c","#f03b20","#bd0026"))(length(breaksdiff)-1)
   
   if(colorchoice == "whitetogreen") colorbardiff = colorRampPalette(c("#f5f5f5","#c7eae5","#80cdc1","#35978f","#01665e","#003c30"))(length(breaksdiff)-1)

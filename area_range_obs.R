@@ -12,48 +12,23 @@ area_range = function(step1_filename,histnotes,projnotes,regionname,regiontype,b
   # boxYextend = Ymin,Ymax
   # shapefile - shapefile name
   
-  #step1_filename = "/data2/3to5/I35/all_mems/tasmax_allmem_absolute_2041-2070_ann.nc"
-  #regionname = "PottowatomieCounty"
-  #regiontype = "box"
-  #boxXextent = "262.85,263.4"
-  #boxYextent = "34.85,35.45"
-  ##histnotes="CCSM4_DeltaSD_Daymet,CCSM4_DeltaSD_Livneh,CCSM4_DeltaSD_PRISM,MIROC5_DeltaSD_Daymet,MIROC5_DeltaSD_Livneh,MIROC5_DeltaSD_PRISM,MPI-ESM-LR_DeltaSD_Daymet,MPI-ESM-LR_DeltaSD_Livneh,MPI-ESM-LR_DeltaSD_PRISM,CCSM4_QDM_Daymet,CCSM4_QDM_Livneh,CCSM4_QDM_PRISM,MIROC5_QDM_Daymet,MIROC5_QDM_Livneh,MIROC5_QDM_PRISM,MPI-ESM-LR_QDM_Daymet,MPI-ESM-LR_QDM_Livneh,MPI-ESM-LR_QDM_PRISM"
-  #projnotes ="CCSM4_DeltaSD_Daymet_rcp26,CCSM4_DeltaSD_Livneh_rcp26,CCSM4_DeltaSD_PRISM_rcp26,CCSM4_DeltaSD_Daymet_rcp45,CCSM4_DeltaSD_Livneh_rcp45,CCSM4_DeltaSD_PRISM_rcp45,CCSM4_DeltaSD_Daymet_rcp85,CCSM4_DeltaSD_Livneh_rcp85,CCSM4_DeltaSD_PRISM_rcp85,MIROC5_DeltaSD_Daymet_rcp26,MIROC5_DeltaSD_Livneh_rcp26,MIROC5_DeltaSD_PRISM_rcp26,MIROC5_DeltaSD_Daymet_rcp45,MIROC5_DeltaSD_Livneh_rcp45,MIROC5_DeltaSD_PRISM_rcp45,MIROC5_DeltaSD_Daymet_rcp85,MIROC5_DeltaSD_Livneh_rcp85,MIROC5_DeltaSD_PRISM_rcp85,MPI-ESM-LR_DeltaSD_Daymet_rcp26,MPI-ESM-LR_DeltaSD_Livneh_rcp26,MPI-ESM-LR_DeltaSD_PRISM_rcp26,MPI-ESM-LR_DeltaSD_Daymet_rcp45,MPI-ESM-LR_DeltaSD_Livneh_rcp45,MPI-ESM-LR_DeltaSD_PRISM_rcp45,MPI-ESM-LR_DeltaSD_Daymet_rcp85,MPI-ESM-LR_DeltaSD_Livneh_rcp85,MPI-ESM-LR_DeltaSD_PRISM_rcp85,CCSM4_QDM_Daymet_rcp26,CCSM4_QDM_Livneh_rcp26,CCSM4_QDM_PRISM_rcp26,CCSM4_QDM_Daymet_rcp45,CCSM4_QDM_Livneh_rcp45,CCSM4_QDM_PRISM_rcp45,CCSM4_QDM_Daymet_rcp85,CCSM4_QDM_Livneh_rcp85,CCSM4_QDM_PRISM_rcp85,MIROC5_QDM_Daymet_rcp26,MIROC5_QDM_Livneh_rcp26,MIROC5_QDM_PRISM_rcp26,MIROC5_QDM_Daymet_rcp45,MIROC5_QDM_Livneh_rcp45,MIROC5_QDM_PRISM_rcp45,MIROC5_QDM_Daymet_rcp85,MIROC5_QDM_Livneh_rcp85,MIROC5_QDM_PRISM_rcp85,MPI-ESM-LR_QDM_Daymet_rcp26,MPI-ESM-LR_QDM_Livneh_rcp26,MPI-ESM-LR_QDM_PRISM_rcp26,MPI-ESM-LR_QDM_Daymet_rcp45,MPI-ESM-LR_QDM_Livneh_rcp45,MPI-ESM-LR_QDM_PRISM_rcp45,MPI-ESM-LR_QDM_Daymet_rcp85,MPI-ESM-LR_QDM_Livneh_rcp85,MPI-ESM-LR_QDM_PRISM_rcp85"  
+  regionname = "PottowatomieCounty"
+  regiontype = "box"
+  boxXextent = "262.85,263.4"
+  boxYextent = "34.85,35.45"
+  obsfile = "/data2/3to5/I35/METDATA/tasmin_histclimo.nc"
   
-  print(class(histnotes))
-  print(class(projnotes))
-  histnotes = do.call("c",strsplit(as.character(histnotes),",",fixed=TRUE))
-  projnotes = do.call("c",strsplit(as.character(projnotes),",",fixed=TRUE))
-  
-  split1 = strsplit(step1_filename,"/",fixed=TRUE)[[1]]
+  split1 = strsplit(obsfile,"/",fixed=TRUE)[[1]]
   split2 = strsplit(split1[length(split1)],"_",fixed=TRUE)[[1]]
   
   varname = split2[1]
-  futureperiod = c(as.numeric(substr(split2[4],1,4)),as.numeric(substr(split2[4],6,9)))
-  difftype = split2[3]
-  seasonin = substr(split2[5],1,3)
   
-  test = nc_open(step1_filename)
+  test = nc_open(obsfile)
   lon = ncvar_get(test,"lon")
   lat = ncvar_get(test,"lat")
-  histlist = ncvar_get(test,"histmean")
-  projlist = ncvar_get(test,"projmean")
-  diffs = ncvar_get(test,"projmeandiff")
-  
+  vardata = ncvar_get(test,test$var[[1]]$name)
   varunits = test$var[[1]]$units
-  changeunits = test$var[[3]]$units
-  
   nc_close(test)
-  
-  histfilebreakdown = do.call(rbind,strsplit(histnotes,",",fixed=TRUE))
-  histfilebreakdown = do.call(rbind,strsplit(histfilebreakdown,"_",fixed=TRUE))
-  histfilebreakdown = data.frame(histfilebreakdown)
-  names(histfilebreakdown) = c("GCM","DS","obs")
-  
-  projfilebreakdown = do.call(rbind,strsplit(projnotes,",",fixed=TRUE))
-  projfilebreakdown = do.call(rbind,strsplit(projfilebreakdown,"_",fixed=TRUE))
-  projfilebreakdown = data.frame(projfilebreakdown)
-  names(projfilebreakdown) = c("GCM","DS","obs","scen")
   
   ###
   # create model grid
@@ -69,38 +44,36 @@ area_range = function(step1_filename,histnotes,projnotes,regionname,regiontype,b
   print(summary(modelgrid$lon))
   
   if(regiontype == "box"){
-  ###
-  # get cells to use
-  Xextent = as.numeric(strsplit(boxXextent,",",fixed=TRUE)[[1]])
-  Yextent = as.numeric(strsplit(boxYextent,",",fixed=TRUE)[[1]])
-  
-  print(Xextent)
-  print(Yextent)
-  
-  if(all(Xextent>0) & all(modelgrid$lon<0)) Xextent=Xextent-360
-  
-  # get closest points in the grid which match the box
-  point1 = distfunc(Xextent[1],Yextent[1],modelgrid) #Xmin, Ymin
-  point2 = distfunc(Xextent[2],Yextent[1],modelgrid) #Xmax, Ymin
-  point3 = distfunc(Xextent[2],Yextent[2],modelgrid) #Xmax, Ymax
-  point4 = distfunc(Xextent[1],Yextent[2],modelgrid) #Xmin, Ymax
-  
-  print(point1)
-  print(point3)
-  
-  locstart = c(point1$R[1],point1$C[1])
-  locend = c(point3$R[1],point3$C[1])
-  
-  print(locstart)
-  print(locend)
-  
-  ###
-  # get point values
-  
-  histvals = apply(histlist[locstart[1]:locend[1],locstart[2]:locend[2],],3,mean,na.rm=TRUE)
-  projvals = apply(projlist[locstart[1]:locend[1],locstart[2]:locend[2],],3,mean,na.rm=TRUE)
-  diffvals = apply(diffs[locstart[1]:locend[1],locstart[2]:locend[2],],3,mean,na.rm=TRUE)
-  
+    ###
+    # get cells to use
+    Xextent = as.numeric(strsplit(boxXextent,",",fixed=TRUE)[[1]])
+    Yextent = as.numeric(strsplit(boxYextent,",",fixed=TRUE)[[1]])
+    
+    print(Xextent)
+    print(Yextent)
+    
+    if(all(Xextent>0) & all(modelgrid$lon<0)) Xextent=Xextent-360
+    
+    # get closest points in the grid which match the box
+    point1 = distfunc(Xextent[1],Yextent[1],modelgrid) #Xmin, Ymin
+    point2 = distfunc(Xextent[2],Yextent[1],modelgrid) #Xmax, Ymin
+    point3 = distfunc(Xextent[2],Yextent[2],modelgrid) #Xmax, Ymax
+    point4 = distfunc(Xextent[1],Yextent[2],modelgrid) #Xmin, Ymax
+    
+    print(point1)
+    print(point3)
+    
+    locstart = c(point1$R[1],point1$C[1])
+    locend = c(point3$R[1],point3$C[1])
+    
+    print(locstart)
+    print(locend)
+    
+    ###
+    # get point values
+    
+    obsvals = mean(vardata[locstart[1]:locend[1],locstart[2]:locend[2]],na.rm=TRUE)
+   
   }
   
   #######
@@ -111,7 +84,7 @@ area_range = function(step1_filename,histnotes,projnotes,regionname,regiontype,b
     projection(test) <- CRS("+proj=longlat +ellps=WGS84 +towgs84=0,0,0,0,0,0,0 +no_defs")
     
     test.sub <- test[as.character(eval(parse(text=paste("test@data$",shapedimension,sep="")))) %in% areaname, ] # in here are two important details. 1) column name in the data array, 2) item in the data array to subset by
-    tmpV = histlist[,,1] # need the 
+    tmpV = vardata # need the 
     
     modrasV = raster(t(tmpV)[length(lat):1,])
     if(all(lon>0)){
@@ -125,49 +98,24 @@ area_range = function(step1_filename,histnotes,projnotes,regionname,regiontype,b
     testin = matrix(getValues(mod.subV),nrow=length(lon),ncol=length(lat))
     testin = testin[,length(lat):1]
     
-    maskuse1 = array(NA,dim=c(length(lon),length(lat),dim(histlist)[3]))
-    maskuse2 = maskuse3 = array(NA,dim=c(length(lon),length(lat),dim(projlist)[3]))
-    for(i in 1:dim(histlist)[3]) maskuse1[,,i] = ifelse(is.na(testin)==FALSE,histlist[,,i],NA)
-    for(i in 1:dim(projlist)[3]){
-      maskuse2[,,i] = ifelse(is.na(testin)==FALSE,projlist[,,i],NA) 
-      maskuse3[,,i] = ifelse(is.na(testin)==FALSE,diffs[,,i],NA)
-    } 
-    
-    histvals = apply(maskuse1,3,mean,na.rm=TRUE)
-    projvals = apply(maskuse2,3,mean,na.rm=TRUE)
-    diffvals = apply(maskuse3,3,mean,na.rm=TRUE)
-    
-    #print(diffs[119,78,])
-    #print(testin[119,78])
-    #print(maskuse3[119,78,])
-    #print(diffvals)
+    maskuse1 = ifelse(is.na(testin)==FALSE,vardata,NA)
+    obsvals = mean(maskuse1,na.rm=TRUE)
     
   }
   
   ####
   # Create output table
   
-  projchangedat = projfilebreakdown
-  projchangedat$modfut = projvals
-  projchangedat$projchange = diffvals
-  
-  projchangedat$modhist = NA
-  
-  for(i in 1:nrow(projchangedat)){
-    GCMin = projfilebreakdown$GCM[i]
-    obsin = projfilebreakdown$obs[i]
-    DSin = projfilebreakdown$DS[i]
-    histidx = which(histfilebreakdown$GCM==GCMin & histfilebreakdown$obs==obsin & histfilebreakdown$DS==DSin)
-    projchangedat$modhist[i] = histvals[histidx]
-  }
-  
-  #projchangedat = projchangedat[,c(3,5,7:11)]
+  OBSdat = "METDATA"
+  OBSvar = varname
+  OBSval = obsvals
+  OBSDF = data.frame(OBSdat,OBSvar,OBSval)
   
   ####
   # Write out file
   
-  filename = paste("/data2/3to5/I35/area_output/",varname,"_",regionname,"_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".csv",sep="")
-  write.table(projchangedat,file=filename,row.names=FALSE,sep=",")
+  filename = paste("/data2/3to5/I35/area_output/",varname,"_METDATA_",regionname,".csv",sep="")
+  write.table(OBSDF,file=filename,row.names=FALSE,sep=",")
   
 }
 
