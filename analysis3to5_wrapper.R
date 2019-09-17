@@ -13,12 +13,14 @@
 # 2) Convert to Ensemble Means by Emissions Scenario (ens_mean.R)
 #   a) Ensemble Mean Calculation
 #   b) Write out files
-# 3) Produce Imagery for Individual Members - inputs needed: individual members calculation (plot_indiv.R)
-# 4) Produce Imagery for Ensemble Means - inputs needed: ensemble means (plot_ens.R)
-# 5) File format conversion - inputs needed: ensemble mean calculation (format_change.R)
-# 6) Area Range Calculation - inputs needed: individual members calculation (area_range.R)
-# 7) Location Point Calculation - inputs needed: individual members calculation (point_calcs.R)
-#
+# 3) Produce Imagery for Individual Members (plot_indiv.R) - inputs needed: individual members calculation 
+# 4) Produce Imagery for Ensemble Means (plot_ens.R) - inputs needed: ensemble means 
+# 5) File format conversion (format_change.R) - inputs needed: ensemble mean calculation 
+# 6) Area Range Calculation (area_range.R) - inputs needed: individual members calculation 
+# 7) Location Point Calculation (point_calcs.R) - inputs needed: individual members calculation 
+# 8) Time series calculator (ts_pull.R) - inputs needed: same list of files for analysis (1), but also location information
+# 9) Bar Plot image maker (barplotmaker.R) - requires file names and paths from point_calcs.R
+# 10) Time series plot maker (tsplotmaker.R) - requires location, varname, and unitsout from ts_pull.R
 # Steps 3-7 require inputs which are the result of 1 and 2
 #
 ###
@@ -31,22 +33,40 @@
 ###
 #
 # Arguments needed
+# Basic arguments
 # 1) short variable name -- tasmax,tasmin,pr,tmax100,tmax95,tmin32,tmin28,frd,gsl,heatwaves,pr25,pr50,mdrn,rx1day,rx5day,cdd,cwd
-# 2) DS technique folders in 3^5
-# 3) steps to run -- c(1:7), or c(1,2,5,6,7)
-# 4) applied function -- sum, mean, heatwaves, growing_season_length,max,rx5day,lastfreeze,maxdryspell,maxwetspell
-# 5) difference type -- absolute,relative, or percent
-# 6) seasonin (either say annual, or say a specific season) -- annual, JJA
-# 7) future time period -- c(2041,2070), c(2071,2099)
-# 8) units for historical and projected values -- "degrees_K", "mm"
-# 9) units for projected change -- "degrees_K", "%"
-# 10) Color choices for plotting
-#   a) raw values colorbar
-#   b) difference values colorbar
-# 11) Limit of color bar bins
-# 12) legend type
-#   a) observed color bar type - raw
-#   b) difference color bar type - difference
+# 2) steps to run -- for example c(1:10), or c(1,2,5,6,7)
+# 3) difference type -- absolute,relative, or percent
+# 4) future time period -- c(2041,2070), c(2071,2099)
+# 5) units for historical and projected values -- "degrees_K", "mm"
+# 6) units for projected change -- "degrees_K", "%"
+# 7) seasonin (either say annual, or say a specific season) -- annual, JJA
+#
+# Regional Calculation Arguments - specific to area_range.R
+# 1) lon range - 3^5 files are in degrees E
+# 2) lat range
+# 3) regiontype - box or shape
+# 4) regionname - for writing files, the name you want for your region.
+#
+# Point Calculation Arguments - specific to point_calcs.R and ts_pull.R
+# 1) locationname - for writing files, the name for the location
+# 2) longitude of location - degrees E
+# 3) latitude of location - degrees N
+#
+# Map Plot arguments
+# 1) Limit of color bar bins
+# 2) Difference values colorbar
+# 3) legend type - raw or difference
+#
+# ts_pull.R specific arguments
+# 1) useobs - logical (TRUE or FALSE), use obs in timeseries?
+#
+# format change arguments - specific to format_change.R
+# 1) outfileformat - GTiff
+#
+# Filenames - if you aren't running step 1 or step 2, leave these NA otherwise
+# 1) step1_filename - filename for climatologies calculated from all 3^5 members
+# 2) step2_filename - filename for ensemble means of climatologies.
 #
 ####
 
@@ -57,33 +77,40 @@ library(sp)
 
 source("/data2/3to5/I35/scripts/analysisfunctions.R")
 
-# set arguments
+# set basic arguments
 varname = "heatwaves" # these are all required arguments for step 1
 steps = c(1,2,3,4) # others can be set based upon what varname is.
 difftype = "absolute"
-#tempperiod = "annual"
 futureperiod = c(2071,2099)
 varunits = "events_per_year"
 changeunits = "events_per_year"
-BINLIMIT=30
-colorchoicediff = "bluetored"
-diffbartype = "difference"
 seasonin = "ann"
-useobs=  FALSE
 
-step1_filename = NA # if these are NA and you are not running step1 or step2, then other options that rely on these will break
-step2_filename = NA
-  
-outfileformat = "GTiff" # file format for step 5
-
+# set regional calculation arguments 
 lon = c(-101,-94)+360 # information needed for step 6 if regiontype = "box"
 lat = c(33,35)
 regiontype = "box"
 regionname = "RedRiver"
 
+# set point calculation arguments
 locationname = "BatonRouge" # step 7 required variables
 loc_lon = 268.8129
 loc_lat = 30.4515
+
+# set map plot arguments
+BINLIMIT=30
+colorchoicediff = "bluetored"
+diffbartype = "difference"
+
+# set ts pull specific arguments
+useobs=  FALSE
+
+# set format change arguments for ensemble means  
+outfileformat = "GTiff" # file format for step 5
+
+# If you aren't running step 1 you must supply the filename. If you aren't running step 2 you must also supply the filename.
+step1_filename = NA # if these are NA and you are not running step1 or step2, then other options that rely on these will break
+step2_filename = NA
 
 ########################################################
 # DON'T CHANGE ANYTHING BELOW THIS LINE!!!
@@ -332,11 +359,28 @@ if(7 %in% steps){
 ########
 
 if(8 %in% steps){
-  # run individual calc
+  # run ts pull calculation
   if(TC==FALSE) command = paste("Rscript ts_pull.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
   if(TC==TRUE) command = paste("Rscript ts_pull.R -v ",varname," -i ",histlist," -p ",projlist," -a ",appfunc," -T ",TC," -H ",TH," -c ",cond," -S ",seasonin," -O ",useobs," -n ",locationname," -x ",loc_lon," -y ",loc_lat,sep="")
   #write.table(command,"/data2/3to5/I35/scripts/testcommand8.txt",sep=",",row.names=FALSE)
   system(command,intern=TRUE)
 }
 
+########
 
+if(9 %in% steps){
+  # run barplot maker
+  datafiles = paste("/data2/3to5/I35/point_output/",varname,"_",locationname,"_",difftype,"_",futureperiod[1],"-",futureperiod[2],"_",seasonin,".csv",sep="")
+  command = paste("Rscript barplotmaker.R -d ",datafiles,sep="")
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand9.txt",sep=",",row.names=FALSE)
+  system(command,intern=TRUE)
+}
+
+########
+
+if(10 %in% steps){
+  # run time series plot maker
+  command = paste("Rscript tsplotmaker.R -l ",locationname," -v ",varname," -u ",var_units," -c ",difftype,sep="")
+  #write.table(command,"/data2/3to5/I35/scripts/testcommand10.txt",sep=",",row.names=FALSE)
+  system(command,intern=TRUE)
+}

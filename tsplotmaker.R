@@ -1,18 +1,19 @@
 ####
 # ts plotter script
 
-tsplotdata = function(location,varname,unitsout,changetype="absolute",filesep=","){
+tsplotdata = function(location,varname,unitsout,changetype="absolute"){
   
-  location = "OKC"
-  varname = "tasmax"
+  #location = "OKC"
+  #varname = "tasmax"
+  #unitsout = "degrees_F"
+  #changetype="absolute"
+  
   filesep=","
-  unitsout = "degrees_F"
-  changetype="absolute"
   
   if(varname=="tasmax" | varname=="tasmin" | varname=="pr"){
     position="topleft"
   }
-  
+  message("Getting needed files")
   histfiles = system(paste("ls /data2/3to5/I35/ts_output/",location,"_",varname,"*historical.csv",sep=""),intern=TRUE)
   projfiles = system(paste("ls /data2/3to5/I35/ts_output/",location,"_",varname,"*rcp*.csv",sep=""),intern=TRUE)
   
@@ -44,7 +45,7 @@ tsplotdata = function(location,varname,unitsout,changetype="absolute",filesep=",
   
   histtsdat = NULL
   proj26tsdat = proj45tsdat = proj85tsdat = NULL
-  
+  message("Gather data from files")
   for(i in 1:nrow(histfilebreakdown)){
     
     projidx26 = which(projfilebreakdown_rcp26$GCM==histfilebreakdown$GCM[i] & projfilebreakdown_rcp26$DS==histfilebreakdown$DS[i] & projfilebreakdown_rcp26$obs==histfilebreakdown$obs[i])
@@ -119,7 +120,8 @@ tsplotdata = function(location,varname,unitsout,changetype="absolute",filesep=",
     proj26anom = proj26agg
     proj45anom = proj45agg
     proj85anom = proj85agg
-    
+    message("Calculating anomalies")
+    message("change type = ",changetype)
     if(changetype=="absolute"){
       histanom[,2:ncol(histanom)] = histanom[,2:ncol(histanom)]-histclimo
       proj26anom[,2:ncol(proj26anom)] = proj26anom[,2:ncol(proj26anom)]-histclimo
@@ -145,7 +147,7 @@ tsplotdata = function(location,varname,unitsout,changetype="absolute",filesep=",
     yrange = range(range(histanom[,2:ncol(histanom)],na.rm=TRUE),range(proj26anom[,2:ncol(proj26anom)],na.rm=TRUE),range(proj45anom[,2:ncol(proj45anom)],na.rm=TRUE),range(proj85anom[,2:ncol(proj85anom)],na.rm=TRUE))
     
     ###
-    
+    message("Writing plots")
     pdf(paste("/data2/3to5/I35/plots/tsplots/",location,"_",varname,"_",unitsout,".pdf",sep=""),onefile=TRUE,width=10,height=6)
     
     plot(projmean~projyears,main = paste("Projected Change in ",varname," for ",location,sep=""),xlab="year",ylab=unitsout,ylim=yrange,lwd=2,type="l")
@@ -303,7 +305,66 @@ tsplotdata = function(location,varname,unitsout,changetype="absolute",filesep=",
     dev.off()
 }
 
+###
+# Argument parser
+
+library(optparse)
+source("/data2/3to5/I35/scripts/analysisfunctions.R")
+library(ncdf4)
+library(maps)
+library(fields)
+library(sp)
+
+#location = "OKC"
+#varname = "tasmax"
+#unitsout = "degrees_F"
+#changetype="absolute"
+
+ParseArgs <- function(arg.list){
+  option_list <- list(
+    #Input and output options first: input, output, timestamp, overlay
+    make_option(c('-l', "--location"), action="store", default='na',
+                dest='location',
+                help=paste("The location of interest for time series", 
+                           "Should match the location in file names resulting from ts_pull.R.")),
+    make_option(c("-v", "--varname"), action="store", default="na",
+                dest='varname',
+                help=paste("Short variable name of interest for a time series")),
+    make_option(c("-u", "--unitsout"), action="store", default="na",
+                dest='unitsout',
+                help=paste("Desired output units for time series graph. ",
+                           "For temperature variables it should be degrees_F, degrees_C, or degrees_K. ",
+                           "For precipitation it should be mm or inches.")),
+    make_option(c("-c", "--changetype"), action="store", default="absolute",
+                dest='changetype',
+                help=paste("Type of anomalies for projected changes to calculate. ",
+                           "Can be one of two options, either absolute (default) or percent. ",
+                           "If percent is chosen, then the unitsout will change to %"))
+    
+  )
   
+  description = paste('Given the files provided, this script will create a collection of time series plot. ', 
+                      "The files used will exist in the directory where ts_pull.R will create them. ")
+  epilouge = paste("Please note: flags may be specified in any order, and '='", 
+                   "not required to specify strings.")
+  usage = paste("usage: %prog -l location -v varname -u unitsout", 
+                "[-c changetype]","[-h --help]")
+  return(parse_args(OptionParser(option_list=option_list, usage=usage, 
+                                 description = description, epilogue=epilouge), 
+                    args=arg.list))
+}
+
+#####
+
+args <- commandArgs(trailingOnly = TRUE)
+arg.len <- length(args)
+
+parsed.args <- ParseArgs(args)
+
+#message("changetype = ",parsed.args$changetype)
+
+tsplotdata(location=parsed.args$location,varname=parsed.args$varname,unitsout=parsed.args$unitsout,changetype=parsed.args$changetype)
+
   
   
 
