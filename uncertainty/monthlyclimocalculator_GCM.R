@@ -8,87 +8,100 @@ library(maps)
 library(fields)
 library(sp)
 
-var = "pr"
+var = "tasmin"
 
-files = system(paste("ls /data2/3to5/I35/",var,"/PARM/",var,"_day*historical*.nc",sep=""),intern=TRUE)
-
-filelist = do.call("rbind",strsplit(files,"/",fixed=TRUE))
+GCMtable = read.table("/home/woot0002/GCMfilesforanalysis_LOCA.csv",sep=",",header=TRUE)
+GCMtable$GCMs = paste(GCMtable$model,GCMtable$ensemble,sep="_")
+GCMs = unique(paste(GCMtable$model,GCMtable$ensemble,sep="_"))
 
 dates = seq(as.Date("1981-01-01"),as.Date("2005-12-31"),by="day")
 monyear = dates[which(substr(dates,9,10)=="01")]
 years = 1981:2005
 months = 1:12
 
-#if(var=="pr"){ 
- # endpt = length(files)-1
-#} else {
-  endpt = length(files)
-#}
+for(g in 1:length(GCMs)){
   
-for(i in 1:endpt){
+  tmptable = subset(GCMtable,GCMs==GCMs[g] & variable==var)
   
-  ptm = proc.time()
-  
-  test = nc_open(files[i])
-  times = ncvar_get(test,"time")
-  lon = ncvar_get(test,"lon")
-  lat = ncvar_get(test,"lat")
-  nc_close(test)
-  
-  if(length(dates)>length(times)){
-    histdates = dates[-which(substr(dates,6,10)=="02-29")]
-  } else {
-    histdates = dates
-  }
-  
-  tmp = tmp2 = array(NA,dim=c(length(lon),length(lat),length(monyear)))
-  if(var=="pr"){
-    tmp3 = tmp4 = tmp5 = array(NA,dim=c(length(lon),length(lat),length(monyear)))
-  }
-  
-  for(j in 1:length(monyear)){
-    idx = which(as.numeric(substr(histdates,1,4))==as.numeric(substr(monyear[j],1,4)) & as.numeric(substr(histdates,6,7))==as.numeric(substr(monyear[j],6,7)))
-    test = nc_open(files[i])
-    if(var=="pr"){
-    prtmp = ncvar_get(test,var,start=c(1,1,idx[1]),count=c(-1,-1,length(idx)))*86400
-    nc_close(test)
-    tmp[,,j] = apply(prtmp,c(1,2),sum,na.rm=TRUE)
-    tmp[,,j] = ifelse(is.na(prtmp[,,1])==FALSE,tmp[,,j],NA)
-    pr50 = ifelse(prtmp>=50.4,1,0)
-    r1mm = ifelse(prtmp>=1,1,0)
+  for(y in 1:length(years)){
+    tmptable$startyear = as.numeric(substr(tmptable$time,1,4))
+    tmptable$endyear = as.numeric(substr(tmptable$time,10,13))
     
-    tmp2[,,j] = apply(pr50,c(1,2),sum,na.rm=TRUE)
-    tmp2[,,j] = ifelse(is.na(prtmp[,,1])==FALSE,tmp2[,,j],NA)
-    
-    tmp3[,,j] = apply(r1mm,c(1,2),sum,na.rm=TRUE)
-    tmp3[,,j] = ifelse(is.na(prtmp[,,1])==FALSE,tmp3[,,j],NA)
-    
-    tmp4[,,j] = apply(prtmp,c(1,2),max,na.rm=TRUE)
-    tmp4[,,j] = ifelse(is.na(prtmp[,,1])==FALSE,tmp4[,,j],NA)
-    
-    tmp5[,,j] = apply(prtmp,c(1,2),calcrollsum,size=5)
-    tmp5[,,j] = ifelse(is.na(prtmp[,,1])==FALSE,tmp5[,,j],NA)
-    
+    if(nrow(tmptable)>1){
+      periodcheck = c()
+      for(i in 1:nrow(tmptable)){
+        period = tmptable$startyear[i]:tmptable$endyear[i]
+        periodcheck[i] = ifelse(years[y] %in% period,1,0)
+      }
+      tmptable2 = tmptable[which(periodcheck==1),]
     } else {
-      prtmp = ncvar_get(test,var,start=c(1,1,idx[1]),count=c(-1,-1,length(idx)))-273.15
-      nc_close(test)
-      tmp[,,j] = apply(prtmp,c(1,2),mean,na.rm=TRUE)
+      tmptable2 = tmptable
+    }
+    
+    startdate = substr(tmptable2$time,1,8)
+    enddate = substr(tmptable2$time,10,18)
+    
+    filedates = seq(as.Date(startdate,"%Y%m%d"),as.Date(enddate,"%Y%m%d"),by="day")
+    
+    test = nc_open(as.character(tmptable2$local_file[1]))
+    time = ncvar_get(test,"time")
+    lon = ncvar_get(test,"lon")
+    lat = ncvar_get(test,"lat")
+    
+    if(y==1){
+      tmp = tmp2 = array(NA,dim=c(length(lon),length(lat),length(monyear)))
+      if(var=="pr"){
+        tmp3 = tmp4 = tmp5 = array(NA,dim=c(length(lon),length(lat),length(monyear)))
+      }
+    }
+    
+    if(length(time)<length(filedates)){
+      filedates2 = filedates[-which(substr(filedates,6,10)=="02-29")]
+    } else {
+      filedates2 = filedates
+    }
+    
+    yearidx = which(as.numeric(substr(filedates2,1,4))==years[y])
+    
+    vardata = ncvar_get(test,var,start=c(1,1,yearidx[1]),count=c(-1,-1,length(yearidx)))
+    if(var=="pr"){
+      vardata = vardata*86400
+    }
+    nc_close(test)
+    
+    tmpdates= filedates2[yearidx]
+    
+    for(m in 1:12){
+      monidx = m +12*(y-1)
+      mondatesidx = which(as.numeric(substr(tmpdates,6,7))==m)
+      if(var=="pr"){
+        tmp[,,monidx] = apply(vardata[,,mondatesidx],c(1,2),sum,na.rm=TRUE)
+        pr50 = ifelse(vardata>=50.4,1,0)
+        r1mm = ifelse(vardata>=1,1,0)
+        tmp2[,,monidx] = apply(pr50[,,mondatesidx],c(1,2),sum,na.rm=TRUE)
+        tmp3[,,monidx] = apply(r1mm[,,mondatesidx],c(1,2),sum,na.rm=TRUE)
+        tmp4[,,monidx] = apply(vardata[,,mondatesidx],c(1,2),max,na.rm=TRUE)
+        #tmp5[,,monidx] = apply(vardata[,,mondatesidx],c(1,2),calcrollsum,size=5)
+      }
       if(var=="tasmax"){
-        prtmp2 = ifelse(prtmp>=35,1,0)
+        tmp[,,monidx] = apply(vardata[,,mondatesidx]-273.15,c(1,2),mean,na.rm=TRUE)
+        tmax95 = ifelse((vardata-273.15)>=35,1,0)
+        tmp2[,,monidx] = apply(tmax95[,,mondatesidx],c(1,2),sum,na.rm=TRUE)
       }
       if(var=="tasmin"){
-        prtmp2 = ifelse(prtmp<=0,1,0)
+        tmp[,,monidx] = apply(vardata[,,mondatesidx]-273.15,c(1,2),mean,na.rm=TRUE)
+        tmin32 = ifelse((vardata-273.15)<=0,1,0)
+        tmp2[,,monidx] = apply(tmin32[,,mondatesidx],c(1,2),sum,na.rm=TRUE)
       }
-      tmp2[,,j] = apply(prtmp2,c(1,2),sum,na.rm=TRUE)
-      tmp2[,,j] = ifelse(is.na(prtmp[,,1])==FALSE,tmp2[,,j],NA)
     }
-    message("Calcs complete for month-year ",monyear[j])
+    message("Finished calcs for year ",y," / ",length(years))
   }
   
   var1mon = var2mon = array(NA,dim=c(length(lon),length(lat),12))
   if(var=="pr"){
     var3mon = var4mon = var5mon = array(NA,dim=c(length(lon),length(lat),12))
   } 
+  
   for(m in 1:12){
     idx = which(as.numeric(substr(monyear,6,7))==m)
     var1mon[,,m] = apply(tmp[,,idx],c(1,2),mean,na.rm=TRUE)
@@ -99,8 +112,8 @@ for(i in 1:endpt){
       var5mon[,,m] = apply(tmp5[,,idx],c(1,2),mean,na.rm=TRUE)
     }
   }
-
-  newfilename = paste(substr(filelist[i,7],1,nchar(filelist[i,7])-3),"_mon.nc",sep="")
+  
+  newfilename = paste(var,GCMs[g],"CMIP5_histclimo_mon.nc",sep="_")
   
   dimX <- ncdim_def( "lon", "degrees_east", lon)
   dimY <- ncdim_def( "lat", "degrees_north", lat)
@@ -157,14 +170,14 @@ for(i in 1:endpt){
   #######
   # Create netcdf file
   if(var!="pr"){
-    nc <- nc_create(paste("/home/woot0002/monthlyclimo/",newfilename,sep="") ,  list(var1d,var2d) )
+    nc <- nc_create(paste("/home/woot0002/GCMs/",newfilename,sep="") ,  list(var1d,var2d) )
     # Write some data to the file
     ncvar_put(nc, var1d, var1mon) # no start or count: write all values\
     ncvar_put(nc, var2d, var2mon) # no start or count: write all values\
     # close ncdf
     nc_close(nc)
   } else {
-    nc <- nc_create(paste("/home/woot0002/monthlyclimo/",newfilename,sep="") ,  list(var1d,var2d,var3d,var4d,var5d) )
+    nc <- nc_create(paste("/home/woot0002/GCMs/",newfilename,sep="") ,  list(var1d,var2d,var3d,var4d,var5d) )
     # Write some data to the file
     ncvar_put(nc, var1d, var1mon) # no start or count: write all values\
     ncvar_put(nc, var2d, var2mon) # no start or count: write all values\
@@ -179,5 +192,3 @@ for(i in 1:endpt){
   message("Process time: ",ptmend[3]," secs")
   
 }
-
-

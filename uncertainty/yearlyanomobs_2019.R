@@ -18,7 +18,7 @@ source("/data2/3to5/I35/scripts/analysisfunctions.R")
 # Arguments set
 
 datasetname = "METDATA" # common name of dataset to start with
-varname = "rx5day" # common name of variable
+varname = "tasmin" # common name of variable
 
 ###
 # load libraries and master list files
@@ -37,9 +37,9 @@ if(datasetname=="regcm") inname="regcmdata"
 
 if(varname=="tasmax" | varname=="tasmin" | varname=="pr"){
 invar = invar2 = varname
-if(datasetname=="METDATA" & varname=="tasmax") invar="tmmx"; invar2 = "tasmax";
-if(datasetname=="METDATA" & varname=="tasmin") invar="tmmn"; invar2 = "tasmin";
-if(datasetname=="METDATA" & varname=="pr") invar = "pr"; invar2 = "pr";
+if(datasetname=="METDATA" & varname=="tasmax"){ invar="tmmx"; invar2 = "tasmax";}
+if(datasetname=="METDATA" & varname=="tasmin"){ invar="tmmn"; invar2 = "tasmin"; message("if worked right");}
+if(datasetname=="METDATA" & varname=="pr"){ invar = "pr"; invar2 = "pr";}
 } else {
 if(varname=="tmax95") invar="tasmax"
 if(datasetname=="METDATA" & varname=="tmax95"){

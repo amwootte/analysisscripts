@@ -20,7 +20,7 @@ source("/data2/3to5/I35/scripts/analysisfunctions.R")
 # Arguments set
 
 datasetname = "I35" # common name of dataset to start with
-varname = "rx5day" # common name of variable
+varname = "rx1day" # common name of variable
 
 if(varname=="tasmax" | varname=="tasmin" | varname=="pr"){
 varin=varname
@@ -42,6 +42,11 @@ varin=varname
 library(ncdf4)
 library(maps) # these two just to check plotting issues if need be
 library(fields)
+library(mailR)
+
+# email settings
+emadd = "amwootte@ou.edu"
+pswd = "D0wnSc2l!ng"
 
 #GCMnamelist = read.table("GCMnamelist_SE.csv",sep=",",header=TRUE,colClasses="character") # GCM namelist
 #scennamelist = read.table("scennamelist_SE.csv",sep=",",header=TRUE,colClasses="character") # scenario namelist
@@ -51,7 +56,9 @@ library(fields)
 # determine files to use in calculation
 
 files= c(system(paste("ls /data2/3to5/I35/",varin,"/EDQM/",varin,"_day*.nc",sep=""),intern=TRUE),
-         system(paste("ls /data2/3to5/I35/",varin,"/DeltaSD/",varin,"_day*.nc",sep=""),intern=TRUE))
+         system(paste("ls /data2/3to5/I35/",varin,"/DeltaSD/",varin,"_day*.nc",sep=""),intern=TRUE),
+         system(paste("ls /data2/3to5/I35/",varin,"/PARM/",varin,"_day*.nc",sep=""),intern=TRUE))
+
 
 ###########
 # Start calculating yearly averages for each file
@@ -229,27 +236,36 @@ rm(vardata)
 gc()
 }
 
-
-
-if(datasetname=="cl10") lon = lon-360
-
-
 #############
 # Combine the historical and future files for each GCM / scenario combination
 
 fileinfo = do.call(rbind,strsplit(files,"_",fixed=TRUE))
 fileinfo2 = do.call(rbind,strsplit(fileinfo[,3],"-",fixed=TRUE))
 fileinfo2 = as.data.frame(fileinfo2)
-fileinfo2$obs = substr(fileinfo2[,3],4,4)
+fileinfo2$obs = NA
+fileinfo2$obs[grep("D01",fileinfo2[,3])] = "D"
+fileinfo2$obs[grep("L01",fileinfo2[,3])] = "L"
+fileinfo2$obs[grep("P01",fileinfo2[,3])] = "P"
 fileinfo2[,2] = as.character(fileinfo2[,2])
 fileinfo2$scen = fileinfo[,4]
 fileinfo2$GCM = NA
 fileinfo2$GCM[grep("A1",fileinfo2[,3])] = "CCSM4"
 fileinfo2$GCM[grep("A2",fileinfo2[,3])] = "MIROC5"
 fileinfo2$GCM[grep("A3",fileinfo2[,3])] = "MPI-ESM-LR"
+if(varin!="tasmin"){
+  fileinfo2$GCM[grep("B1",fileinfo2[,3])] = "CCSM4"
+  fileinfo2$GCM[grep("B2",fileinfo2[,3])] = "MIROC5"
+  fileinfo2$GCM[grep("B3",fileinfo2[,3])] = "MPI-ESM-LR"
+} else {
+  fileinfo2$GCM[grep("Bd1",fileinfo2[,3])] = "CCSM4"
+  fileinfo2$GCM[grep("Bd2",fileinfo2[,3])] = "MIROC5"
+  fileinfo2$GCM[grep("Bd3",fileinfo2[,3])] = "MPI-ESM-LR"
+}
+
+#if(datasetname=="cl10") lon = lon-360
 
 #GCMs = subset(GCMnamelist,is.na(GCMnamelist[,which(names(GCMnamelist)==datasetname)])==FALSE)[,which(names(GCMnamelist)==datasetname)]
-GCMs = c("A1","A2","A3")
+GCMs = c("CCSM4","MIROC5","MPI-ESM-LR")
 yearshist = 1981:2005
 yearsfuture = 2006:2099
 yearsfull = c(yearshist,yearsfuture)
@@ -259,8 +275,9 @@ fileslist = list()
 
 for(g in 1:length(GCMs)){
 
-GCMidx = grep(GCMs[g],files)
-
+#GCMidx = grep(GCMs[g],files)
+GCMidx = which(fileinfo2$GCM==GCMs[g])
+  
 if(datasetname=="I35"){
   histidx = GCMidx[grep("historical",files[GCMidx])]
   futureidx = GCMidx[-grep("historical",files[GCMidx])]
@@ -371,4 +388,13 @@ nc_close(nc1)
 
 message("Finished writing file ",i," / ",length(outputdata2))
 }
- 
+
+send.mail(from = emadd,
+          to = emadd,
+          subject = "message from R on climatedata",
+          body = "yearlyanom_2019.R has finished running", 
+          authenticate = TRUE,
+          smtp = list(host.name = "smtp.office365.com", port = 587,
+                      user.name = emadd, passwd = pswd, tls = TRUE))
+
+

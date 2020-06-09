@@ -53,7 +53,7 @@ weight_calc = function(xvals,filelist=projfiles,subs = GCMs){
 ###
 # set parameters
 
-varname = "tmax95"
+varname = "rx1day"
 weighttype = "GCM"
 obsdatasetname = "METDATA"
 regfilepath = "regfits"

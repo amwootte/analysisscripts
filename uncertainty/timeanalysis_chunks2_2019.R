@@ -20,7 +20,7 @@ source("/home/woot0002/scripts/uncertainty/2018/componentfunctions_2018.R")
 ###
 # set variable name
 
-varname = "rx1day"
+varname = "rx5day"
 anfilepath = "analysis"
 
 ###
@@ -182,6 +182,11 @@ if(varname=="r1mm"){
 
 if(varname=="rx1day"){
   titlevar = "Average 1-day Maximum Rainfall"
+  titlevarunits = "mm"
+}
+
+if(varname=="rx5day"){
+  titlevar = "Average 5-day Maximum Rainfall"
   titlevarunits = "mm"
 }
 

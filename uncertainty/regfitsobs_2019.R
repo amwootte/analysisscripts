@@ -14,7 +14,7 @@
 # Arguments set
 
 datasetname = "METDATA" # common name of dataset to start with
-varname = "rx5day" # common name of variable
+varname = "tasmin" # common name of variable
 
 ###
 # load libraries and master list files

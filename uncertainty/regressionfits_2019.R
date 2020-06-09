@@ -14,13 +14,18 @@
 # Arguments set
 
 datasetname = "I35" # common name of dataset to start with
-varname = "rx5day" # common name of variable
+varname = "rx1day" # common name of variable
 
 ###
 # load libraries and master list files
 library(ncdf4)
 library(maps) # these two just to check plotting issues if need be
 library(fields)
+library(mailR)
+
+# email settings
+emadd = "amwootte@ou.edu"
+pswd = "D0wnSc2l!ng"
 
 ###
 # determine files to use in calculation
@@ -217,3 +222,10 @@ nc_close(nc1)
 message("Finished writing file ",f," / ",length(files))
 }
 
+send.mail(from = emadd,
+          to = emadd,
+          subject = "message from R on climatedata",
+          body = "regressionfits_2019.R has finished running", 
+          authenticate = TRUE,
+          smtp = list(host.name = "smtp.office365.com", port = 587,
+                      user.name = emadd, passwd = pswd, tls = TRUE))

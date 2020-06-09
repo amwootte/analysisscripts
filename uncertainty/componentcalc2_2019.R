@@ -25,7 +25,7 @@ source("/home/woot0002/scripts/uncertainty/2018/componentfunctions_2018.R")
 ###
 # set variable name
 
-varname = "tmax95"
+varname = "rx1day"
 regfilepath = "regfits"
 anfilepath = "analysis"
 
@@ -194,7 +194,12 @@ dataunits2 = "%"
 }
 
 if(varname=="rx1day"){
-  dataunits1 = "mm"
+  dataunits1 = "mm^2"
+  dataunits2 = "mm"
+}
+
+if(varname=="rx5day"){
+  dataunits1 = "mm^2"
   dataunits2 = "mm"
 }
 
