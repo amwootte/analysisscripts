@@ -70,8 +70,8 @@ for(i in 1:nrow(pointstorun)){
           TMIN[,y] = tasmin[idx]
         }
         if(length(idx)==365){
-          TMAX[c(1:59,61:366),y] = tasmax[idx]
-          TMIN[c(1:59,61:366),y] = tasmin[idx]
+          TMAX[c(1:365),y] = tasmax[idx]
+          TMIN[c(1:365),y] = tasmin[idx]
         }
       }
       
