@@ -102,7 +102,6 @@ WA2 = W2/sum(W2)
 #########
 # 
 
-
 simmetdat = metadat[1:nummodels,]
 simmetdat$product = paste(simmetdat$DS,simmetdat$training,sep="_")
 simmetdat$Wc = Wc
@@ -112,17 +111,33 @@ simmetdat$Wq = Wq
 simmetdat$col = NA
 
 products=unique(simmetdat$product)
-cols = c("red","blue","green","purple","pink","orange","black")
+cols = c("red","blue","green","salmon4","royalblue4","seagreen4","purple","pink","orange","black")
 
 for(p in 1:length(products)){
   if(p==1){
-    plot(Wc~Wq,data=simmetdat[which(simmetdat$product==products[p]),],xlim=c(0,1),ylim=c(0,1),col=cols[p])
+    plot(Wc~Wq,data=simmetdat[which(simmetdat$product==products[p]),],xlim=c(0,1),ylim=c(0,1),col=cols[p],xlab="Skill Weight",ylab="Consistency Weight")
   } else {
     points(Wc~Wq,data=simmetdat[which(simmetdat$product==products[p]),],col=cols[p]) 
   }
 }
 abline(coef=c(0,1),lty=2)
-legend("topright",legend=products,col=cols,pch=1)
+legend("bottomright",legend=products,col=cols,pch=1,cex=0.75)
+
+
+products=unique(simmetdat$product)
+cols = c("red","blue","green","salmon4","royalblue4","seagreen4","purple","pink","orange","black")
+
+for(p in 1:length(products)){
+  if(p==1){
+    plot(Wu~Wq,data=simmetdat[which(simmetdat$product==products[p]),],xlim=c(0,1),ylim=c(0,1),col=cols[p],xlab="Skill Weight",ylab="Independence Weight")
+  } else {
+    points(Wu~Wq,data=simmetdat[which(simmetdat$product==products[p]),],col=cols[p]) 
+  }
+}
+abline(coef=c(0,1),lty=2)
+legend("topright",legend=products,col=cols,pch=1,cex=0.75)
+
+
 
 
 
@@ -134,7 +149,7 @@ for(p in 1:length(products)){
   chulllist[[p]] = chx1
   
   if(p==1){
-    plot(Wc~Wq,data=chx1,type="l",lwd=2,xlim=c(0,0.7),ylim=c(0,0.2),col=cols[p])
+    plot(Wc~Wq,data=chx1,type="l",lwd=2,xlim=c(0.8,1),ylim=c(0.8,1),col=cols[p],xlab="Skill Weight",ylab="Consistency Weight")
   } else {
     lines(Wc~Wq,lwd=2,data=chx1,col=cols[p]) 
   }
@@ -142,6 +157,7 @@ for(p in 1:length(products)){
 }
 abline(coef=c(0,1),lty=2)
 legend("bottomright",legend=products,col=cols,lwd=2,cex=0.7)
+#dev.off()
 
 
 chulllist = list()
@@ -152,15 +168,14 @@ for(p in 1:length(products)){
   chulllist[[p]] = chx1
   
   if(p==1){
-    plot(Wu~Wq,data=chx1,type="l",lwd=2,xlim=c(0,1),ylim=c(0,1),col=cols[p])
+    plot(Wu~Wq,data=chx1,type="l",lwd=2,xlim=c(0.8,1),ylim=c(0,0.02),col=cols[p],xlab="Skill Weight",ylab="Independence Weight")
   } else {
     lines(Wu~Wq,lwd=2,data=chx1,col=cols[p]) 
   }
   
 }
 abline(coef=c(0,1),lty=2)
-legend("bottomright",legend=products,col=cols,lwd=2,cex=0.7)
-
+legend("topleft",legend=products,col=cols,lwd=2,cex=0.7)
 
 
 chulllist = list()
@@ -171,7 +186,7 @@ for(p in 1:length(products)){
   chulllist[[p]] = chx1
   
   if(p==1){
-    plot(Wu~Wc,data=chx1,type="l",lwd=2,xlim=c(0,0.3),ylim=c(0,1),col=cols[p])
+    plot(Wu~Wc,data=chx1,type="l",lwd=2,xlim=c(0.8,1),ylim=c(0,0.02),col=cols[p])
   } else {
     lines(Wu~Wc,lwd=2,data=chx1,col=cols[p]) 
   }
@@ -184,9 +199,9 @@ legend("bottomright",legend=products,col=cols,lwd=2,cex=0.7)
 library(ggplot2) 
 
 dg<-qplot(Wq,Wc,colour=Wu,shape=product,data=simmetdat) 
-dg + scale_shape_manual(values=1:7) + scale_colour_gradient2(low="red", high="blue",mid = "gray96", 
-                            midpoint = 0.3,limits=c(0,0.6),breaks=seq(0,1,by=0.1),guide="legend") +
-  xlim(0,1)+ylim(0,1)
+dg + scale_shape_manual(values=1:10) + scale_colour_gradient2(low="red", high="blue",mid = "gray96", 
+                            midpoint = 0.01,limits=c(0,0.02),breaks=seq(0,0.02,by=0.001),guide="legend") +
+  xlim(0.75,1)+ylim(0.75,1)
 
 
 meandat = aggregate(simmetdat[,6:8],by=list(product=simmetdat$product),mean,na.rm=TRUE)

@@ -16,7 +16,7 @@ vars = c("tmax","tmax95","tmin","tmin32","pr","r1mm","rx1day")
 RMSEmatlist = NRMSEmatlist = metadatlist = fileslist = list()
 
 for(i in 1:length(vars)){
-  load(paste("/home/woot0002/RMSEfiles/",vars[i],"_RMSEmats.Rdata",sep=""))
+  load(paste("/home/woot0002/RMSEfiles/",vars[i],"_RMSEmats_v2.Rdata",sep=""))
   RMSEmatlist[[i]]=RMSEmat
   NRMSEmatlist[[i]]=normRMSEmat
   metadatlist[[i]]=metadat
@@ -63,11 +63,11 @@ melted_cormat1 <- melt(del.RMSE, na.rm = TRUE)
 topend = ceiling(max(NRMSEmatout,na.rm=TRUE))
 
 ### Heatmap
-pdf("NRMSEheatmap_combined.pdf",height=15,width=15)
+pdf("NRMSEheatmap_combined_v2.pdf",height=15,width=15)
 ggplot(data = melted_cormat1, aes(Var2, Var1, fill = value))+
   geom_tile(color = "white")+
   scale_fill_gradient2(low = "blue", high = "red", mid = "gray96", 
-                       midpoint = 1, limit = c(0,topend), breaks=seq(0,topend,by=0.25), space = "Lab", 
+                       midpoint = topend/2, limit = c(0,topend), breaks=seq(0,topend,by=0.25), space = "Lab", 
                        name="NRMSE") +
   theme_minimal()+ 
   theme(axis.text.x = element_text(angle = 90, vjust = 1, 
@@ -81,7 +81,7 @@ dev.off()
 # save out data
 normRMSEmat = NRMSEmatout
 metadat = metadatlist[[1]]
-save(list=c("normRMSEmat","metadat","simnames"),file="/home/woot0002/RMSEmats_combo.Rdata")
+save(list=c("normRMSEmat","metadat","simnames"),file="/home/woot0002/RMSEmats_combo_v2.Rdata")
 
 
 
