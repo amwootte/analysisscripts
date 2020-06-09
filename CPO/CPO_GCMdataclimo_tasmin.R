@@ -7,25 +7,30 @@ library(ncdf4)
 library(maps)
 library(fields)
 library(sp)
+library(mailR)
+
+# email settings
+emadd = "amwootte@ou.edu"
+pswd = "D0wnSc2l!ng"
 
 histperiod = c(1980,2005)
 histdates = seq(as.Date("1950-01-01"),as.Date("2005-12-31"),by="day")
 histmonths = seq(as.Date("1980-01-15"),as.Date("2005-12-15"),by="month")
-latrange = c(26,40)
-lonrange = c(251,270)
+latrange = c(20,45)
+lonrange = c(245,275)
 
 ########
 # tasmax regular GCMs
 
-GCMdata = read.table("tasminCMIP5grab.csv",sep=",",header=TRUE)
+GCMdata = read.table("/home/woot0002/old_csv/tasminCMIP5grab.csv",sep=",",header=TRUE)
 GCMdata$model = as.character(GCMdata$model)
 GCMdata$local_file = as.character(GCMdata$local_file)
 
 GCMs = unique(GCMdata$model)
 
-for(g in 17:length(GCMs)){
+for(g in 1:length(GCMs)){
   
-  g=18
+  #g=18
   tmp = subset(GCMdata,model==GCMs[g])
   fileranges = do.call("rbind",strsplit(as.character(tmp$time),"-"))
   for(n in 1:ncol(fileranges)) fileranges[,n] = paste(substr(fileranges[,n],1,4),"-",substr(fileranges[,n],5,6),"-",substr(fileranges[,n],7,8),sep="")
@@ -47,8 +52,28 @@ for(g in 17:length(GCMs)){
       dates=histdates
     } 
     if(length(times)<length(moddates)){
-      moddates = moddates[-which(substr(moddates,6,10)=="02-29")]
-      dates = histdates[-which(substr(histdates,6,10)=="02-29")]
+      if(length(which(substr(moddates,6,10)=="02-29"))>=1){
+        moddates = moddates[-which(substr(moddates,6,10)=="02-29")]
+        dates = histdates[-which(substr(histdates,6,10)=="02-29")]
+      }
+    } 
+    if(length(times)<length(moddates)){
+      modmonyear = unique(substr(moddates,1,7))
+      histmonyear = unique(substr(histdates,1,7))
+      daysin = as.character(1:30)
+      daysin[1:9] = paste("0",daysin[1:9],sep="")
+      
+      moddates2 = c()
+      for(i in 1:length(modmonyear)){
+        moddates2 = c(moddates2,paste(modmonyear[i],daysin,sep="-"))
+      }
+      
+      dates2 = c()
+      for(i in 1:length(histmonyear)){
+        dates2 = c(dates2,paste(histmonyear[i],daysin,sep="-"))
+      }
+      moddates = moddates2
+      dates = dates2
     } 
     
     if(h==1){
@@ -114,7 +139,7 @@ for(g in 17:length(GCMs)){
 # make tasmax netcdfs for LOCA
 1:length(GCMs)
 
-for(i in 21:length(GCMs)){
+for(i in 1:length(GCMs)){
 
   dimX <- ncdim_def( "lon", "degrees_east", LONlist[[i]])
   dimY <- ncdim_def( "lat", "degrees_north",LATlist[[i]])
@@ -139,6 +164,15 @@ ncvar_put(nc, var4d, TMAX95list[[i]]) # no start or count: write all values\
 nc_close(nc)
 
 }
+
+
+send.mail(from = emadd,
+          to = emadd,
+          subject = "message from R on climatedata",
+          body = "tasmin GCM climo calcs finished has finished running", 
+          authenticate = TRUE,
+          smtp = list(host.name = "smtp.office365.com", port = 587,
+                      user.name = emadd, passwd = pswd, tls = TRUE))
 
 
 
