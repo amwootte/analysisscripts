@@ -1,0 +1,220 @@
+
+R version 3.6.0 (2019-04-26) -- "Planting of a Tree"
+Copyright (C) 2019 The R Foundation for Statistical Computing
+Platform: x86_64-redhat-linux-gnu (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> ######################
+> #
+> # Attach dates to files
+> 
+> library(graphics)
+> setwd("/home/woot0002/Navajo/")
+> library(fields)
+Loading required package: spam
+Loading required package: dotCall64
+Loading required package: grid
+Spam version 2.3-0 (2019-09-13) is loaded.
+Type 'help( Spam)' or 'demo( spam)' for a short introduction 
+and overview of this package.
+Help for individual functions is also obtained by adding the
+suffix '.spam' to the function name, e.g. 'help( chol.spam)'.
+
+Attaching package: ‘spam’
+
+The following objects are masked from ‘package:base’:
+
+    backsolve, forwardsolve
+
+Loading required package: maps
+See https://github.com/NCAR/Fields for
+ an extensive vignette, other supplements and source code 
+> library(sp)
+> library(raster)
+> library(rasterVis)
+Loading required package: lattice
+Loading required package: latticeExtra
+Loading required package: RColorBrewer
+> library(maps)
+> library(maptools)
+Checking rgeos availability: FALSE
+ 	Note: when rgeos is not available, polygon geometry 	computations in maptools depend on gpclib,
+ 	which has a restricted licence. It is disabled by default;
+ 	to enable gpclib, type gpclibPermit()
+> library(ncdf4)
+> library(mailR)
+Registered S3 method overwritten by 'R.oo':
+  method        from       
+  throw.default R.methodsS3
+> 
+> #filestoprocess = system("ls /data2/3to5/I35/Navajo/*/*/*/*.txt",intern=TRUE)
+> filestoprocess = system("ls /data2/3to5/I35/Navajo/tasmin/*.txt",intern=TRUE)
+> 
+> for(i in 1:length(filestoprocess)){
++   
++   filedat = read.table(filestoprocess[i],sep=" ",header=TRUE)
++   filesplit = strsplit(filestoprocess[i],"/")
++   filesplit2 = strsplit(filesplit[[1]][7],"_")[[1]]
++   varname = filesplit2[1]
++   period = c(as.numeric(substr(filesplit2[7],1,4)),as.numeric(substr(filesplit2[7],6,9)))
++   
++   dates = seq(as.Date(paste(period[1],"-01-01",sep="")),as.Date(paste(period[2],"-12-31",sep="")),by="day")
++   if(length(dates)>nrow(filedat)){
++     datesin = dates[-which(substr(dates,6,10)=="02-29")]
++   } else {
++     datesin = dates
++   }
++   
++   year = as.numeric(substr(datesin,1,4))
++   month = as.numeric(substr(datesin,6,7))
++   day = as.numeric(substr(datesin,9,10))
++   hr = min = sec = rep(0,length(datesin))
++   
++   dateframe = data.frame(year,month,day,hr,min,sec)
++   
++   filedat = cbind(dateframe,filedat)
++   fileout=  filesplit[[1]][7]
++   message("Writing out file")
++   ptm = proc.time()
++   write.table(filedat,file=fileout,col.names=FALSE,row.names=FALSE,sep=" ")
++   ptmend = proc.time()-ptm
++   message("Finished writing file after ",ptmend[3]," secs")
++   message("Finished data formatting for file ",i," / ",length(filestoprocess))
++ }
+Writing out file
+Finished writing file after 0.197 secs
+Finished data formatting for file 1 / 36
+Writing out file
+Finished writing file after 0.721 secs
+Finished data formatting for file 2 / 36
+Writing out file
+Finished writing file after 0.744 secs
+Finished data formatting for file 3 / 36
+Writing out file
+Finished writing file after 0.757 secs
+Finished data formatting for file 4 / 36
+Writing out file
+Finished writing file after 0.205 secs
+Finished data formatting for file 5 / 36
+Writing out file
+Finished writing file after 0.788 secs
+Finished data formatting for file 6 / 36
+Writing out file
+Finished writing file after 0.747 secs
+Finished data formatting for file 7 / 36
+Writing out file
+Finished writing file after 0.758000000000001 secs
+Finished data formatting for file 8 / 36
+Writing out file
+Finished writing file after 0.218999999999999 secs
+Finished data formatting for file 9 / 36
+Writing out file
+Finished writing file after 0.75 secs
+Finished data formatting for file 10 / 36
+Writing out file
+Finished writing file after 0.782 secs
+Finished data formatting for file 11 / 36
+Writing out file
+Finished writing file after 0.798999999999999 secs
+Finished data formatting for file 12 / 36
+Writing out file
+Finished writing file after 0.218 secs
+Finished data formatting for file 13 / 36
+Writing out file
+Finished writing file after 0.818999999999999 secs
+Finished data formatting for file 14 / 36
+Writing out file
+Finished writing file after 0.814 secs
+Finished data formatting for file 15 / 36
+Writing out file
+Finished writing file after 0.759999999999998 secs
+Finished data formatting for file 16 / 36
+Writing out file
+Finished writing file after 0.200999999999997 secs
+Finished data formatting for file 17 / 36
+Writing out file
+Finished writing file after 0.804000000000002 secs
+Finished data formatting for file 18 / 36
+Writing out file
+Finished writing file after 0.824999999999999 secs
+Finished data formatting for file 19 / 36
+Writing out file
+Finished writing file after 0.760000000000002 secs
+Finished data formatting for file 20 / 36
+Writing out file
+Finished writing file after 0.201999999999998 secs
+Finished data formatting for file 21 / 36
+Writing out file
+Finished writing file after 0.756 secs
+Finished data formatting for file 22 / 36
+Writing out file
+Finished writing file after 0.75 secs
+Finished data formatting for file 23 / 36
+Writing out file
+Finished writing file after 0.741999999999997 secs
+Finished data formatting for file 24 / 36
+Writing out file
+Finished writing file after 0.207999999999998 secs
+Finished data formatting for file 25 / 36
+Writing out file
+Finished writing file after 0.878999999999998 secs
+Finished data formatting for file 26 / 36
+Writing out file
+Finished writing file after 0.821000000000005 secs
+Finished data formatting for file 27 / 36
+Writing out file
+Finished writing file after 0.815999999999995 secs
+Finished data formatting for file 28 / 36
+Writing out file
+Finished writing file after 0.221000000000004 secs
+Finished data formatting for file 29 / 36
+Writing out file
+Finished writing file after 0.825000000000003 secs
+Finished data formatting for file 30 / 36
+Writing out file
+Finished writing file after 0.823999999999998 secs
+Finished data formatting for file 31 / 36
+Writing out file
+Finished writing file after 0.875999999999998 secs
+Finished data formatting for file 32 / 36
+Writing out file
+Finished writing file after 0.249000000000002 secs
+Finished data formatting for file 33 / 36
+Writing out file
+Finished writing file after 0.917000000000002 secs
+Finished data formatting for file 34 / 36
+Writing out file
+Finished writing file after 0.780000000000001 secs
+Finished data formatting for file 35 / 36
+Writing out file
+Finished writing file after 0.786999999999999 secs
+Finished data formatting for file 36 / 36
+> 
+> send.mail(from = "amwootte@ou.edu",
++           to = "amwootte@ou.edu",
++           subject = "message from R on climatedata",
++           body = "URGdateformatting.R has finished running", 
++           authenticate = TRUE,
++           smtp = list(host.name = "smtp.office365.com", port = 587,
++                       user.name = "amwootte@ou.edu", passwd = "D0wnSc2l!ng", tls = TRUE))
+[1] "Java-Object{org.apache.commons.mail.SimpleEmail@7e0ea639}"
+> 
+> 
+> 
+> 
+> proc.time()
+   user  system elapsed 
+ 52.216   1.035  54.897 

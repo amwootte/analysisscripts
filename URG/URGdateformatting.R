@@ -2,7 +2,8 @@
 #
 # Attach dates to files
 
-setwd("/home/woot0002/Navajo/")
+library(graphics)
+setwd("/home/woot0002/Blanco/")
 library(fields)
 library(sp)
 library(raster)
@@ -10,14 +11,16 @@ library(rasterVis)
 library(maps)
 library(maptools)
 library(ncdf4)
+library(mailR)
 
-filestoprocess = system("ls /data2/3to5/I35/Navajo/*/*/*/*.txt",intern=TRUE)
+#filestoprocess = system("ls /data2/3to5/I35/Navajo/*/*/*/*.txt",intern=TRUE)
+filestoprocess = system("ls /data2/3to5/I35/Blanco/tasmin/*.txt",intern=TRUE)
 
 for(i in 1:length(filestoprocess)){
   
   filedat = read.table(filestoprocess[i],sep=" ",header=TRUE)
   filesplit = strsplit(filestoprocess[i],"/")
-  filesplit2 = strsplit(filesplit[[1]][9],"_")[[1]]
+  filesplit2 = strsplit(filesplit[[1]][7],"_")[[1]]
   varname = filesplit2[1]
   period = c(as.numeric(substr(filesplit2[7],1,4)),as.numeric(substr(filesplit2[7],6,9)))
   
@@ -36,11 +39,22 @@ for(i in 1:length(filestoprocess)){
   dateframe = data.frame(year,month,day,hr,min,sec)
   
   filedat = cbind(dateframe,filedat)
-  fileout=  filesplit[[1]][9]
-  write.table(filedat,file=fileout,col.names=TRUE,row.names=FALSE,sep=" ")
+  fileout=  filesplit[[1]][7]
+  message("Writing out file")
+  ptm = proc.time()
+  write.table(filedat,file=fileout,col.names=FALSE,row.names=FALSE,sep=" ")
+  ptmend = proc.time()-ptm
+  message("Finished writing file after ",ptmend[3]," secs")
   message("Finished data formatting for file ",i," / ",length(filestoprocess))
 }
 
+send.mail(from = "amwootte@ou.edu",
+          to = "amwootte@ou.edu",
+          subject = "message from R on climatedata",
+          body = "URGdateformatting.R has finished running", 
+          authenticate = TRUE,
+          smtp = list(host.name = "smtp.office365.com", port = 587,
+                      user.name = "amwootte@ou.edu", passwd = "D0wnSc2l!ng", tls = TRUE))
 
 
 
