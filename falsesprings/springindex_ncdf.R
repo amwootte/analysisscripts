@@ -1,6 +1,7 @@
 ####
 # Spring Phenology R test code - netcdf
 # AMW 6/14/2019
+# Updated 10/13/2020
 #
 # This script demonstrates appropriate use for calculations of first leaf, first bloom, damage index, and false springs using the functions
 # in springpheno.R. Specific to vector analyses.
@@ -14,7 +15,7 @@ library(maps)
 library(fields)
 library(sp)
 setwd("/home/woot0002") # edit or remove paths for scripts and files as needed
-source("scripts/springpheno.R")
+source("scripts/springpheno_v0.4.R")
 
 tasmaxfile = "/data2/3to5/I35/tasmax/EDQM/tasmax_day_I35txp1-EDQM-A38L01K00_rcp85_r1i1p1_I35Land_20060101-20991231.nc"
 tasminfile = "/data2/3to5/I35/tasmin/EDQM/tasmin_day_I35tnp1-EDQM-A38L01K00_rcp85_r1i1p1_I35Land_20060101-20991231.nc"
