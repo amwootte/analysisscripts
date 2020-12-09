@@ -113,7 +113,7 @@ calc_si = function(TMAX,TMIN,lat,missingcalc="mean"){
   
   for(i in 1:ncol(TMAX)){
     
-    tasmax= as.vector(TMAX[,i]) # getting tasmin and tasmax into vectors
+    tasmax = as.vector(TMAX[,i]) # getting tasmin and tasmax into vectors
     tasmin = as.vector(TMIN[,i])
     
     
@@ -153,18 +153,43 @@ calc_si = function(TMAX,TMIN,lat,missingcalc="mean"){
     if(missingcalc=="loess"){
       message("using loess to impute missing values")
       t=1:nrow(TMAX)
-      for(R in 1:ncol(TMAX)){
-        notNAidx = which(is.na(TMAX[,R])==FALSE)
-        isNAidx = which(is.na(TMAX[,R])==TRUE)
-        loessfit = loess(TMAX[notNAidx,R]~t[notNAidx],span=0.03)
-        TMAX[isNAidx,R] = predict(loessfit,newdata=t[isNAidx])
+        notNAidx = which(is.na(tasmax)==FALSE)
+        isNAidx = which(is.na(tasmax)==TRUE)
+        loessfit = loess(tasmax[notNAidx]~t[notNAidx],span=0.03)
+        tasmax[isNAidx] = predict(loessfit,newdata=t[isNAidx])
         
-        notNAidx = which(is.na(TMIN[,R])==FALSE)
-        isNAidx = which(is.na(TMIN[,R])==TRUE)
-        loessfit = loess(TMIN[notNAidx,R]~t[notNAidx],span=0.03)
-        TMIN[isNAidx,R] = predict(loessfit,newdata=t[isNAidx])
+        notNAidx = which(is.na(tasmin)==FALSE)
+        isNAidx = which(is.na(tasmin)==TRUE)
+        loessfit = loess(tasmin[notNAidx]~t[notNAidx],span=0.03)
+        tasmin[isNAidx] = predict(loessfit,newdata=t[isNAidx])
+        
+        check1idx = which(is.na(tasmax[1:31])==TRUE)
+        if(length(check1idx)>0){
+          tasmax[check1idx] = mean(tasmax[1:31],na.rm=TRUE)
+        }
+        check1idx = which(is.na(tasmin[1:31])==TRUE)
+        if(length(check1idx)>0){
+          tasmin[check1idx] = mean(tasmin[1:31],na.rm=TRUE)
+        }
+        
+        if(is.na(tasmax[length(tasmax)])==TRUE){
+          tasmax[length(tasmax)] = tasmax[(length(tasmax)-1)]
+        }
+        
+        if(is.na(tasmin[length(tasmin)])==TRUE){
+          tasmin[length(tasmin)] = tasmin[(length(tasmin)-1)]
+        }
+        
+        if(any(is.na(tasmax)==TRUE)==TRUE){
+          message("Still has missing values in tasmax") 
+          print(tasmax)
+        }
+        if(any(is.na(tasmin)==TRUE)==TRUE){
+          message("Still has missing values in tasmin")  
+          print(tasmin)
+        }
+        
       }
-    }
     
     
     DOY = 1:length(tasmax) # the example I have here is with a full year of data, so you may which to calculate with less than one full year.
