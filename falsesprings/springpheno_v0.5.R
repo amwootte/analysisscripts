@@ -1,5 +1,5 @@
 ####
-# Spring Phenology R functions v. 0.3
+# Spring Phenology R functions v. 0.5
 # AMW 12/9/2020
 #
 # This script contains functions describing numerous spring onset indices and false spring
@@ -152,43 +152,65 @@ calc_si = function(TMAX,TMIN,lat,missingcalc="mean"){
     
     if(missingcalc=="loess"){
       message("using loess to impute missing values")
+      tstart = -(nrow(TMAX)/2):0
+      tstartuse = 1:184
       t=1:nrow(TMAX)
-        notNAidx = which(is.na(tasmax)==FALSE)
-        isNAidx = which(is.na(tasmax)==TRUE)
-        loessfit = loess(tasmax[notNAidx]~t[notNAidx],span=0.03)
-        tasmax[isNAidx] = predict(loessfit,newdata=t[isNAidx])
-        
-        notNAidx = which(is.na(tasmin)==FALSE)
-        isNAidx = which(is.na(tasmin)==TRUE)
-        loessfit = loess(tasmin[notNAidx]~t[notNAidx],span=0.03)
-        tasmin[isNAidx] = predict(loessfit,newdata=t[isNAidx])
-        
-        check1idx = which(is.na(tasmax[1:31])==TRUE)
-        if(length(check1idx)>0){
-          tasmax[check1idx] = mean(tasmax[1:31],na.rm=TRUE)
-        }
-        check1idx = which(is.na(tasmin[1:31])==TRUE)
-        if(length(check1idx)>0){
-          tasmin[check1idx] = mean(tasmin[1:31],na.rm=TRUE)
-        }
-        
-        if(is.na(tasmax[length(tasmax)])==TRUE){
-          tasmax[length(tasmax)] = tasmax[(length(tasmax)-1)]
-        }
-        
-        if(is.na(tasmin[length(tasmin)])==TRUE){
-          tasmin[length(tasmin)] = tasmin[(length(tasmin)-1)]
-        }
-        
-        if(any(is.na(tasmax)==TRUE)==TRUE){
-          message("Still has missing values in tasmax") 
-          print(tasmax)
-        }
-        if(any(is.na(tasmin)==TRUE)==TRUE){
-          message("Still has missing values in tasmin")  
-          print(tasmin)
-        }
-        
+      tend = seq(367,by=1,length.out=184)
+      tenduse = seq(366,by=-1,length.out=184)
+      tenduse = tenduse[order(tenduse)]
+      tstring = c(tstart,t,tend)
+      
+      if(i==1){
+        tmaxseries = c(TMAX[tenduse,i],tasmax,TMAX[tstartuse,(i+1)])
+        tminseries = c(TMIN[tenduse,i],tasmin,TMIN[tstartuse,(i+1)])
+      }
+      if(i>1 & i<ncol(TMAX)){
+        tmaxseries = c(TMAX[tenduse,(i-1)],tasmax,TMAX[tstartuse,(i+1)])
+        tminseries = c(TMIN[tenduse,(i-1)],tasmin,TMIN[tstartuse,(i+1)])
+      }
+      if(i==ncol(TMAX)){
+        tmaxseries = c(TMAX[tenduse,(i-1)],tasmax,TMAX[tstartuse,(i-1)])
+        tminseries = c(TMIN[tenduse,(i-1)],tasmin,TMIN[tstartuse,(i-1)])
+      }
+      
+      notNAidx = which(is.na(tmaxseries)==FALSE)
+      isNAidx = which(is.na(tmaxseries)==TRUE)
+      loessfit = loess(tmaxseries[notNAidx]~tstring[notNAidx],span=0.03)
+      tmaxseries[isNAidx] = predict(loessfit,newdata=tstring[isNAidx])
+      tasmax = tmaxseries[which(tstring>=1 & tstring<=366)]
+      
+      notNAidx = which(is.na(tminseries)==FALSE)
+      isNAidx = which(is.na(tminseries)==TRUE)
+      loessfit = loess(tminseries[notNAidx]~tstring[notNAidx],span=0.03)
+      tminseries[isNAidx] = predict(loessfit,newdata=tstring[isNAidx])
+      tasmin = tminseries[which(tstring>=1 & tstring<=366)]
+      
+      check1idx = which(is.na(tasmax[1:31])==TRUE)
+      if(length(check1idx)>0){
+        tasmax[check1idx] = mean(tasmax[1:31],na.rm=TRUE)
+      }
+      check1idx = which(is.na(tasmin[1:31])==TRUE)
+      if(length(check1idx)>0){
+        tasmin[check1idx] = mean(tasmin[1:31],na.rm=TRUE)
+      }
+      
+      if(is.na(tasmax[length(tasmax)])==TRUE){
+        tasmax[length(tasmax)] = tasmax[(length(tasmax)-1)]
+      }
+      
+      if(is.na(tasmin[length(tasmin)])==TRUE){
+        tasmin[length(tasmin)] = tasmin[(length(tasmin)-1)]
+      }
+      
+      if(any(is.na(tasmax)==TRUE)==TRUE){
+        message("Still has missing values in tasmax") 
+        print(tasmax)
+      }
+      if(any(is.na(tasmin)==TRUE)==TRUE){
+        message("Still has missing values in tasmin")  
+        print(tasmin)
+      }
+      
       }
     
     
