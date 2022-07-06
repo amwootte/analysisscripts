@@ -1,0 +1,723 @@
+source("/data2/3to5/I35/scripts/analysisfunctions.R")
+library(ncdf4)
+library(maps)
+library(mapdata)
+library(maptools)
+library(fields)
+library(sp)
+library(raster)
+library(rasterVis)
+library(ggplot2)
+library(modi)
+
+
+weighted.var2 <- function(x, w, na.rm = FALSE) {
+  if (na.rm) {
+    w <- w[i <- !is.na(x)]
+    x <- x[i]
+  }
+  sum.w <- sum(w)
+  sum.w2 <- sum(w^2)
+  mean.w <- sum(x * w) / sum(w)
+  (sum.w / (sum.w^2 - sum.w2)) * sum(w * (x - mean.w)^2, na.rm =na.rm)
+}
+
+weighted.var3 <- function(x, w, na.rm = FALSE) {
+  if (na.rm) {
+    w <- w[i <- !is.na(x)]
+    x <- x[i]
+  }
+  sum.w <- sum(w)
+  (sum(w*x^2) * sum.w - sum(w*x)^2) / (sum.w^2 - sum(w^2))
+}
+
+setwd("/home/woot0002/DS_ind/")
+
+var = varin = "pr"
+type="ann"
+weightingused = "full"
+stateapplied = "full"
+
+if(weightingused=="full"){
+  load(file=paste("Sanderson_EnsembleWeights_",var,"_",type,".Rdata",sep=""))
+} else {
+  load(file=paste("Sanderson_EnsembleWeights_",var,"_",type,"_",weightingused,".Rdata",sep=""))
+}
+
+#####
+# get domain mask
+
+if(stateapplied!="full"){
+  test = nc_open(paste("/home/woot0002/DS_ind/",stateapplied,"_mask.nc",sep=""))
+  regionmask = ncvar_get(test,"mask")
+  lon = ncvar_get(test,"lon")
+  lat = ncvar_get(test,"lat")
+  nc_close(test)
+}
+
+####
+
+GCMweights= GCMhdat
+LOCAweights = LOCAhdat
+
+# precip files
+GCMfiles_pr = system("ls /home/woot0002/GCMs/regrid/pr_*histclimo*.nc",intern=TRUE)
+LOCAfiles_pr = system("ls /home/woot0002/LOCA/regrid/pr_*histclimo*.nc",intern=TRUE)
+GCMprojfiles_pr = system("ls /home/woot0002/GCMs/regrid/pr_*projclimo*.nc",intern=TRUE)
+LOCAprojfiles_pr = system("ls /home/woot0002/LOCA/regrid/pr_*projclimo*.nc",intern=TRUE)
+LIVNEHfile_pr = system("ls /home/woot0002/monthlyclimo/pr_day*livneh*.nc",intern=TRUE)
+
+# tasmax files
+GCMfiles_tmax = system("ls /home/woot0002/GCMs/regrid/tasmax_*histclimo*.nc",intern=TRUE)
+LOCAfiles_tmax = system("ls /home/woot0002/LOCA/regrid/tasmax_*histclimo*.nc",intern=TRUE)
+GCMprojfiles_tmax = system("ls /home/woot0002/GCMs/regrid/tasmax_*projclimo*.nc",intern=TRUE)
+LOCAprojfiles_tmax = system("ls /home/woot0002/LOCA/regrid/tasmax_*projclimo*.nc",intern=TRUE)
+LIVNEHfile_tmax = system("ls /home/woot0002/monthlyclimo/tasmax_day*livneh*.nc",intern=TRUE)
+
+# subset files down
+load("/home/woot0002/DS_ind/manuscript1/GCMlist.Rdata")
+
+GCM_hfiles_pr = GCM_pfiles_pr = LOCA_hfiles_pr = LOCA_pfiles_pr = c()
+GCM_hfiles_tmax = GCM_pfiles_tmax = LOCA_hfiles_tmax = LOCA_pfiles_tmax = c()
+
+for(i in 1:length(GCMlist)){
+  #pr 
+  GCM_hfiles_pr[i] = GCMfiles_pr[grep(paste(GCMlist[i],"_",sep=""),GCMfiles_pr)]
+  GCM_pfiles_pr[i] = GCMprojfiles_pr[grep(paste(GCMlist[i],"_",sep=""),GCMprojfiles_pr)]
+  LOCA_hfiles_pr[i] = LOCAfiles_pr[grep(paste(GCMlist[i],"_",sep=""),LOCAfiles_pr)]
+  LOCA_pfiles_pr[i] = LOCAprojfiles_pr[grep(paste(GCMlist[i],"_",sep=""),LOCAprojfiles_pr)]
+  #tmax
+  GCM_hfiles_tmax[i] = GCMfiles_tmax[grep(paste(GCMlist[i],"_",sep=""),GCMfiles_tmax)]
+  GCM_pfiles_tmax[i] = GCMprojfiles_tmax[grep(paste(GCMlist[i],"_",sep=""),GCMprojfiles_tmax)]
+  LOCA_hfiles_tmax[i] = LOCAfiles_tmax[grep(paste(GCMlist[i],"_",sep=""),LOCAfiles_tmax)]
+  LOCA_pfiles_tmax[i] = LOCAprojfiles_tmax[grep(paste(GCMlist[i],"_",sep=""),LOCAprojfiles_tmax)]
+}
+
+###
+# create full filelist + metadata table - historical
+
+#GCMs
+filelist1 = do.call("rbind",strsplit(GCM_hfiles_pr,"/",fixed=TRUE))
+filelist2 = do.call("rbind",strsplit(filelist1[,6],"_",fixed=TRUE))
+filelist2 = as.data.frame(filelist2)
+filelist2$training = "NA"
+GCMhdat = filelist2[,c(2,3,4,6)]
+names(GCMhdat) = c("GCM","exp","DS","training")
+
+#LOCA
+filelist1 = do.call("rbind",strsplit(LOCA_hfiles_pr,"/",fixed=TRUE))
+filelist2 = do.call("rbind",strsplit(filelist1[,6],"_",fixed=TRUE))
+filelist2 = as.data.frame(filelist2)
+filelist2$training = "Livneh"
+LOCAhdat = filelist2[,c(2,3,4,6)]
+names(LOCAhdat) = names(GCMhdat)
+
+#All metadata
+GCM = rep(NA,1)
+exp = rep(NA,1)
+DS = rep(NA,1)
+training = "LIVNEH"
+obsdat = data.frame(GCM,exp,DS,training)
+
+GCMhdat = rbind(GCMhdat,obsdat)
+LOCAhdat= rbind(LOCAhdat,obsdat)
+
+# all files
+GCMgroup_pr = c(GCM_hfiles_pr,LIVNEHfile_pr)
+LOCAgroup_pr = c(LOCA_hfiles_pr,LIVNEHfile_pr)
+
+GCMgroup_tmax = c(GCM_hfiles_tmax,LIVNEHfile_tmax)
+LOCAgroup_tmax = c(LOCA_hfiles_tmax,LIVNEHfile_tmax)
+
+
+###
+# create full filelist + metadata table - projected
+
+#GCMs
+filelist1 = do.call("rbind",strsplit(GCM_pfiles_pr,"/",fixed=TRUE))
+filelist2 = do.call("rbind",strsplit(filelist1[,6],"_",fixed=TRUE))
+filelist2 = as.data.frame(filelist2)
+filelist2$training = "NA"
+GCMpdat = filelist2[,c(2,3,4,6)]
+names(GCMpdat) = c("GCM","exp","DS","training")
+
+#LOCA
+filelist1 = do.call("rbind",strsplit(LOCA_pfiles_pr,"/",fixed=TRUE))
+filelist2 = do.call("rbind",strsplit(filelist1[,6],"_",fixed=TRUE))
+filelist2 = as.data.frame(filelist2)
+filelist2$training = "Livneh"
+LOCApdat = filelist2[,c(2,3,4,6)]
+names(LOCApdat) = names(GCMpdat)
+
+# all files
+GCMpgroup_pr = GCM_pfiles_pr
+LOCApgroup_pr = LOCA_pfiles_pr
+GCMpgroup_tmax = GCM_pfiles_tmax
+LOCApgroup_tmax = LOCA_pfiles_tmax
+
+######
+# Gather data
+
+ncvarname = "prclimo"
+### GCM hist + Livneh - pr
+GCMhvardatalist_pr = list()
+for(i in 1:length(GCMgroup_pr)){
+  nctest = nc_open(GCMgroup_pr[i])
+  idx = which(names(nctest$var)==ncvarname)
+  tmp = ncvar_get(nctest,nctest$var[[idx]]$name)
+      GCMhvardatalist_pr[[i]] = apply(tmp,c(1,2),sum,na.rm=TRUE)
+      if(stateapplied=="full"){
+        GCMhvardatalist_pr[[i]] = ifelse(is.na(tmp[,,1])==FALSE,GCMhvardatalist_pr[[i]],NA)
+      } else {
+        GCMhvardatalist_pr[[i]] = ifelse(regionmask==1,GCMhvardatalist_pr[[i]],NA)
+      }
+  #vardatalist[[i]] = ncvar_get(nctest,ncvarname)
+  if(i==1) lat = ncvar_get(nctest,"lat"); lon=ncvar_get(nctest,"lon");
+  nc_close(nctest)
+}
+
+sapply(GCMhvardatalist_pr,mean,na.rm=TRUE)
+
+### GCM projected change - pr
+GCMpvardatalist_pr = list()
+for(i in 1:length(GCMpgroup_pr)){
+  nctest = nc_open(GCMpgroup_pr[i])
+  idx = which(names(nctest$var)==ncvarname)
+  tmp = ncvar_get(nctest,nctest$var[[idx]]$name)
+      GCMpvardatalist_pr[[i]] = apply(tmp,c(1,2),sum,na.rm=TRUE)
+      if(stateapplied=="full"){
+        GCMpvardatalist_pr[[i]] = ifelse(is.na(tmp[,,1])==FALSE,GCMpvardatalist_pr[[i]],NA)
+      } else {
+        GCMpvardatalist_pr[[i]] = ifelse(regionmask==1,GCMpvardatalist_pr[[i]],NA)
+      }
+  #vardatalist[[i]] = ncvar_get(nctest,ncvarname)
+  if(i==1) lat = ncvar_get(nctest,"lat"); lon=ncvar_get(nctest,"lon")
+  nc_close(nctest)
+}
+
+sapply(GCMpvardatalist_pr,mean,na.rm=TRUE)
+
+
+### LOCA historical + Livneh - pr
+
+LOCAhvardatalist_pr = list()
+for(i in 1:length(LOCAgroup_pr)){
+  nctest = nc_open(LOCAgroup_pr[i])
+  idx = which(names(nctest$var)==ncvarname)
+  tmp = ncvar_get(nctest,nctest$var[[idx]]$name)
+      LOCAhvardatalist_pr[[i]] = apply(tmp,c(1,2),sum,na.rm=TRUE)
+      if(stateapplied=="full"){
+        LOCAhvardatalist_pr[[i]] = ifelse(is.na(tmp[,,1])==FALSE,LOCAhvardatalist_pr[[i]],NA)
+      } else{
+        LOCAhvardatalist_pr[[i]] = ifelse(regionmask==1,LOCAhvardatalist_pr[[i]],NA)
+      }
+  if(i==1) lat = ncvar_get(nctest,"lat"); lon=ncvar_get(nctest,"lon")
+  nc_close(nctest)
+}
+
+sapply(LOCAhvardatalist_pr,mean,na.rm=TRUE)
+
+### LOCA projected change - pr
+
+LOCApvardatalist_pr = list()
+for(i in 1:length(LOCApgroup_pr)){
+  nctest = nc_open(LOCApgroup_pr[i])
+  idx = which(names(nctest$var)==ncvarname)
+  tmp = ncvar_get(nctest,nctest$var[[idx]]$name)
+  LOCApvardatalist_pr[[i]] = apply(tmp,c(1,2),sum,na.rm=TRUE)
+  if(stateapplied=="full"){
+    LOCApvardatalist_pr[[i]] = ifelse(is.na(tmp[,,1])==FALSE,LOCApvardatalist_pr[[i]],NA)
+  } else{
+    LOCApvardatalist_pr[[i]] = ifelse(regionmask==1,LOCApvardatalist_pr[[i]],NA)
+  }
+  if(i==1) lat = ncvar_get(nctest,"lat"); lon=ncvar_get(nctest,"lon")
+  nc_close(nctest)
+}
+
+sapply(LOCApvardatalist_pr,mean,na.rm=TRUE)
+
+
+######
+# Gather Data 2
+
+ncvarname = "tmaxclimo"
+### GCM hist + Livneh - tmax
+GCMhvardatalist_tmax = list()
+for(i in 1:length(GCMgroup_tmax)){
+  nctest = nc_open(GCMgroup_tmax[i])
+  idx = which(names(nctest$var)==ncvarname)
+  tmp = ncvar_get(nctest,nctest$var[[idx]]$name)
+  GCMhvardatalist_tmax[[i]] = apply(tmp,c(1,2),mean,na.rm=TRUE)
+  if(stateapplied=="full"){
+    GCMhvardatalist_tmax[[i]] = ifelse(is.na(tmp[,,1])==FALSE,GCMhvardatalist_tmax[[i]],NA)
+  } else{
+    GCMhvardatalist_tmax[[i]] = ifelse(regionmask==1,GCMhvardatalist_tmax[[i]],NA)
+  }
+  #vardatalist[[i]] = ncvar_get(nctest,ncvarname)
+  if(i==1) lat = ncvar_get(nctest,"lat"); lon=ncvar_get(nctest,"lon");
+  nc_close(nctest)
+}
+
+sapply(GCMhvardatalist_tmax,mean,na.rm=TRUE)
+
+### GCM projected change - tmax
+GCMpvardatalist_tmax = list()
+for(i in 1:length(GCMpgroup_tmax)){
+  nctest = nc_open(GCMpgroup_tmax[i])
+  idx = which(names(nctest$var)==ncvarname)
+  tmp = ncvar_get(nctest,nctest$var[[idx]]$name)
+  GCMpvardatalist_tmax[[i]] = apply(tmp,c(1,2),mean,na.rm=TRUE)
+  if(stateapplied=="full"){
+    GCMpvardatalist_tmax[[i]] = ifelse(is.na(tmp[,,1])==FALSE,GCMpvardatalist_tmax[[i]],NA)
+  } else{
+    GCMpvardatalist_tmax[[i]] = ifelse(regionmask==1,GCMpvardatalist_tmax[[i]],NA)
+  }
+  #vardatalist[[i]] = ncvar_get(nctest,ncvarname)
+  if(i==1) lat = ncvar_get(nctest,"lat"); lon=ncvar_get(nctest,"lon")
+  nc_close(nctest)
+}
+
+sapply(GCMpvardatalist_tmax,mean,na.rm=TRUE)
+
+### LOCA historical + Livneh - tmax
+
+LOCAhvardatalist_tmax = list()
+for(i in 1:length(LOCAgroup_tmax)){
+  nctest = nc_open(LOCAgroup_tmax[i])
+  idx = which(names(nctest$var)==ncvarname)
+  tmp = ncvar_get(nctest,nctest$var[[idx]]$name)
+  LOCAhvardatalist_tmax[[i]] = apply(tmp,c(1,2),mean,na.rm=TRUE)
+  if(stateapplied=="full"){
+    LOCAhvardatalist_tmax[[i]] = ifelse(is.na(tmp[,,1])==FALSE,LOCAhvardatalist_tmax[[i]],NA)
+  } else{
+    LOCAhvardatalist_tmax[[i]] = ifelse(regionmask==1,LOCAhvardatalist_tmax[[i]],NA)
+  }
+  if(i==1) lat = ncvar_get(nctest,"lat"); lon=ncvar_get(nctest,"lon")
+  nc_close(nctest)
+}
+
+sapply(LOCAhvardatalist_tmax,mean,na.rm=TRUE)
+
+### LOCA projected change - tmax
+
+LOCApvardatalist_tmax = list()
+for(i in 1:length(LOCApgroup_tmax)){
+  nctest = nc_open(LOCApgroup_tmax[i])
+  idx = which(names(nctest$var)==ncvarname)
+  tmp = ncvar_get(nctest,nctest$var[[idx]]$name)
+  LOCApvardatalist_tmax[[i]] = apply(tmp,c(1,2),mean,na.rm=TRUE)
+  if(stateapplied=="full"){
+    LOCApvardatalist_tmax[[i]] = ifelse(is.na(tmp[,,1])==FALSE,LOCApvardatalist_tmax[[i]],NA)
+  } else{
+    LOCApvardatalist_tmax[[i]] = ifelse(regionmask==1,LOCApvardatalist_tmax[[i]],NA)
+  }
+  if(i==1) lat = ncvar_get(nctest,"lat"); lon=ncvar_get(nctest,"lon")
+  nc_close(nctest)
+}
+
+sapply(LOCApvardatalist_tmax,mean,na.rm=TRUE)
+
+
+#######
+# projected changes - _pr
+
+GCMchange_pr = LOCAchange_pr = GCMproj_pr = LOCAproj_pr = GCMhist_pr = LOCAhist_pr = array(NA,dim=c(length(lon),ncol=length(lat),26))
+OBS_pr = LOCAhvardatalist_pr[[27]]
+for(i in 1:26){
+  GCMchange_pr[,,i] = GCMpvardatalist_pr[[i]]-GCMhvardatalist_pr[[i]]
+  LOCAchange_pr[,,i] = LOCApvardatalist_pr[[i]]-LOCAhvardatalist_pr[[i]]
+  GCMproj_pr[,,i] = GCMpvardatalist_pr[[i]]
+  LOCAproj_pr[,,i] = LOCApvardatalist_pr[[i]]
+  GCMhist_pr[,,i] = GCMhvardatalist_pr[[i]]
+  LOCAhist_pr[,,i] = LOCAhvardatalist_pr[[i]]
+}
+
+#######
+# projected changes - _tmax
+
+GCMchange_tmax = LOCAchange_tmax = GCMproj_tmax = LOCAproj_tmax = GCMhist_tmax = LOCAhist_tmax = array(NA,dim=c(length(lon),ncol=length(lat),26))
+OBS_tmax = LOCAhvardatalist_tmax[[27]]
+for(i in 1:26){
+  GCMchange_tmax[,,i] = GCMpvardatalist_tmax[[i]]-GCMhvardatalist_tmax[[i]]
+  LOCAchange_tmax[,,i] = LOCApvardatalist_tmax[[i]]-LOCAhvardatalist_tmax[[i]]
+  GCMproj_tmax[,,i] = GCMpvardatalist_tmax[[i]]
+  LOCAproj_tmax[,,i] = LOCApvardatalist_tmax[[i]]
+  GCMhist_tmax[,,i] = GCMhvardatalist_tmax[[i]]
+  LOCAhist_tmax[,,i] = LOCAhvardatalist_tmax[[i]]
+}
+
+
+######
+# prep weights
+
+GCMweights$Wh = (GCMweights$Wuh*GCMweights$Wqh)/sum(GCMweights$Wuh*GCMweights$Wqh)
+GCMweights$Wc = (GCMweights$Wuc*GCMweights$Wqc)/sum(GCMweights$Wuc*GCMweights$Wqc)
+GCMweights$Ws = GCMweights$Wqh/sum(GCMweights$Wqh)
+
+LOCAweights$Wh = (LOCAweights$Wuh*LOCAweights$Wqh)/sum(LOCAweights$Wuh*LOCAweights$Wqh)
+LOCAweights$Wc = (LOCAweights$Wuc*LOCAweights$Wqc)/sum(LOCAweights$Wuc*LOCAweights$Wqc)
+LOCAweights$Ws = LOCAweights$Wqh/sum(LOCAweights$Wqh)
+
+######
+# Calculate historical means (weighted and unweighted) - pr
+
+GCMunweightedmean_hist_pr = apply(GCMhist_pr,c(1,2),mean,na.rm=TRUE)
+LOCAunweightedmean_hist_pr = apply(LOCAhist_pr,c(1,2),mean,na.rm=TRUE)
+
+GCMskillmean_hist_pr = GCMSIhmean_hist_pr = GCMSIcmean_hist_pr = GCMunweightedmean_hist_pr
+LOCAskillmean_hist_pr = LOCASIhmean_hist_pr = LOCASIcmean_hist_pr = LOCAunweightedmean_hist_pr
+
+for(i in 1:26){
+  
+  ## skill mean
+  tmpG = GCMhist_pr[,,i]*GCMweights$Ws[i]
+  tmpL = LOCAhist_pr[,,i]*LOCAweights$Ws[i]
+  if(i==1){
+    GCMskillmean_hist_pr = tmpG
+    LOCAskillmean_hist_pr = tmpL
+  } else {
+    GCMskillmean_hist_pr = GCMskillmean_hist_pr+tmpG
+    LOCAskillmean_hist_pr = LOCAskillmean_hist_pr+tmpL
+  }
+  
+  ## skill+ind hist only
+  tmpG = GCMhist_pr[,,i]*GCMweights$Wh[i]
+  tmpL = LOCAhist_pr[,,i]*LOCAweights$Wh[i]
+  if(i==1){
+    GCMSIhmean_hist_pr = tmpG
+    LOCASIhmean_hist_pr = tmpL
+  } else {
+    GCMSIhmean_hist_pr = GCMSIhmean_hist_pr+tmpG
+    LOCASIhmean_hist_pr = LOCASIhmean_hist_pr+tmpL
+  }
+  
+  ## skill+ind hist and change
+  tmpG = GCMhist_pr[,,i]*GCMweights$Wc[i]
+  tmpL = LOCAhist_pr[,,i]*LOCAweights$Wc[i]
+  if(i==1){
+    GCMSIcmean_hist_pr = tmpG
+    LOCASIcmean_hist_pr = tmpL
+  } else {
+    GCMSIcmean_hist_pr = GCMSIcmean_hist_pr+tmpG
+    LOCASIcmean_hist_pr = LOCASIcmean_hist_pr+tmpL
+  }
+  
+}
+
+LOCAunweightedmean_bias_pr = LOCAunweightedmean_hist_pr-OBS_pr
+LOCAskillmean_bias_pr = LOCAskillmean_hist_pr-OBS_pr
+LOCASIhmean_bias_pr = LOCASIhmean_hist_pr-OBS_pr
+LOCASIcmean_bias_pr = LOCASIcmean_hist_pr-OBS_pr
+
+GCMunweightedmean_bias_pr = GCMunweightedmean_hist_pr-OBS_pr
+GCMskillmean_bias_pr = GCMskillmean_hist_pr-OBS_pr
+GCMSIhmean_bias_pr = GCMSIhmean_hist_pr-OBS_pr
+GCMSIcmean_bias_pr = GCMSIcmean_hist_pr-OBS_pr
+
+######
+# Calculate historical means (weighted and unweighted) - tmax
+
+GCMunweightedmean_hist_tmax = apply(GCMhist_tmax,c(1,2),mean,na.rm=TRUE)
+LOCAunweightedmean_hist_tmax = apply(LOCAhist_tmax,c(1,2),mean,na.rm=TRUE)
+
+GCMskillmean_hist_tmax = GCMSIhmean_hist_tmax = GCMSIcmean_hist_tmax = GCMunweightedmean_hist_tmax
+LOCAskillmean_hist_tmax = LOCASIhmean_hist_tmax = LOCASIcmean_hist_tmax = LOCAunweightedmean_hist_tmax
+
+for(i in 1:26){
+  
+  ## skill mean
+  tmpG = GCMhist_tmax[,,i]*GCMweights$Ws[i]
+  tmpL = LOCAhist_tmax[,,i]*LOCAweights$Ws[i]
+  if(i==1){
+    GCMskillmean_hist_tmax = tmpG
+    LOCAskillmean_hist_tmax = tmpL
+  } else {
+    GCMskillmean_hist_tmax = GCMskillmean_hist_tmax+tmpG
+    LOCAskillmean_hist_tmax = LOCAskillmean_hist_tmax+tmpL
+  }
+  
+  ## skill+ind hist only
+  tmpG = GCMhist_tmax[,,i]*GCMweights$Wh[i]
+  tmpL = LOCAhist_tmax[,,i]*LOCAweights$Wh[i]
+  if(i==1){
+    GCMSIhmean_hist_tmax = tmpG
+    LOCASIhmean_hist_tmax = tmpL
+  } else {
+    GCMSIhmean_hist_tmax = GCMSIhmean_hist_tmax+tmpG
+    LOCASIhmean_hist_tmax = LOCASIhmean_hist_tmax+tmpL
+  }
+  
+  ## skill+ind hist and change
+  tmpG = GCMhist_tmax[,,i]*GCMweights$Wc[i]
+  tmpL = LOCAhist_tmax[,,i]*LOCAweights$Wc[i]
+  if(i==1){
+    GCMSIcmean_hist_tmax = tmpG
+    LOCASIcmean_hist_tmax = tmpL
+  } else {
+    GCMSIcmean_hist_tmax = GCMSIcmean_hist_tmax+tmpG
+    LOCASIcmean_hist_tmax = LOCASIcmean_hist_tmax+tmpL
+  }
+  
+}
+
+LOCAunweightedmean_bias_tmax = LOCAunweightedmean_hist_tmax-OBS_tmax
+LOCAskillmean_bias_tmax = LOCAskillmean_hist_tmax-OBS_tmax
+LOCASIhmean_bias_tmax = LOCASIhmean_hist_tmax-OBS_tmax
+LOCASIcmean_bias_tmax = LOCASIcmean_hist_tmax-OBS_tmax
+
+GCMunweightedmean_bias_tmax = GCMunweightedmean_hist_tmax-OBS_tmax
+GCMskillmean_bias_tmax = GCMskillmean_hist_tmax-OBS_tmax
+GCMSIhmean_bias_tmax = GCMSIhmean_hist_tmax-OBS_tmax
+GCMSIcmean_bias_tmax = GCMSIcmean_hist_tmax-OBS_tmax
+
+######
+# Calculate change means (weighted and unweighted) - pr only
+
+GCMunweightedmean_change_pr = apply(GCMchange_pr,c(1,2),mean,na.rm=TRUE)
+LOCAunweightedmean_change_pr = apply(LOCAchange_pr,c(1,2),mean,na.rm=TRUE)
+
+GCMskillmean_change_pr = GCMSIhmean_change_pr = GCMSIcmean_change_pr = GCMunweightedmean_change_pr
+LOCAskillmean_change_pr = LOCASIhmean_change_pr = LOCASIcmean_change_pr = LOCAunweightedmean_change_pr
+
+for(i in 1:26){
+  
+  ## skill mean
+  tmpG = GCMchange_pr[,,i]*GCMweights$Ws[i]
+  tmpL = LOCAchange_pr[,,i]*LOCAweights$Ws[i]
+  if(i==1){
+    GCMskillmean_change_pr = tmpG
+    LOCAskillmean_change_pr = tmpL
+  } else {
+    GCMskillmean_change_pr = GCMskillmean_change_pr+tmpG
+    LOCAskillmean_change_pr = LOCAskillmean_change_pr+tmpL
+  }
+  
+  ## skill+ind hist only
+  tmpG = GCMchange_pr[,,i]*GCMweights$Wh[i]
+  tmpL = LOCAchange_pr[,,i]*LOCAweights$Wh[i]
+  if(i==1){
+    GCMSIhmean_change_pr = tmpG
+    LOCASIhmean_change_pr = tmpL
+  } else {
+    GCMSIhmean_change_pr = GCMSIhmean_change_pr+tmpG
+    LOCASIhmean_change_pr = LOCASIhmean_change_pr+tmpL
+  }
+  
+  ## skill+ind hist and change
+  tmpG = GCMchange_pr[,,i]*GCMweights$Wc[i]
+  tmpL = LOCAchange_pr[,,i]*LOCAweights$Wc[i]
+  if(i==1){
+    GCMSIcmean_change_pr = tmpG
+    LOCASIcmean_change_pr = tmpL
+  } else {
+    GCMSIcmean_change_pr = GCMSIcmean_change_pr+tmpG
+    LOCASIcmean_change_pr = LOCASIcmean_change_pr+tmpL
+  }
+  
+}
+
+######
+# Calculate change means (weighted and unweighted) - tmax only
+
+GCMunweightedmean_change_tmax = apply(GCMchange_tmax,c(1,2),mean,na.rm=TRUE)
+LOCAunweightedmean_change_tmax = apply(LOCAchange_tmax,c(1,2),mean,na.rm=TRUE)
+
+GCMskillmean_change_tmax = GCMSIhmean_change_tmax = GCMSIcmean_change_tmax = GCMunweightedmean_change_tmax
+LOCAskillmean_change_tmax = LOCASIhmean_change_tmax = LOCASIcmean_change_tmax = LOCAunweightedmean_change_tmax
+
+for(i in 1:26){
+  
+  ## skill mean
+  tmpG = GCMchange_tmax[,,i]*GCMweights$Ws[i]
+  tmpL = LOCAchange_tmax[,,i]*LOCAweights$Ws[i]
+  if(i==1){
+    GCMskillmean_change_tmax = tmpG
+    LOCAskillmean_change_tmax = tmpL
+  } else {
+    GCMskillmean_change_tmax = GCMskillmean_change_tmax+tmpG
+    LOCAskillmean_change_tmax = LOCAskillmean_change_tmax+tmpL
+  }
+  
+  ## skill+ind hist only
+  tmpG = GCMchange_tmax[,,i]*GCMweights$Wh[i]
+  tmpL = LOCAchange_tmax[,,i]*LOCAweights$Wh[i]
+  if(i==1){
+    GCMSIhmean_change_tmax = tmpG
+    LOCASIhmean_change_tmax = tmpL
+  } else {
+    GCMSIhmean_change_tmax = GCMSIhmean_change_tmax+tmpG
+    LOCASIhmean_change_tmax = LOCASIhmean_change_tmax+tmpL
+  }
+  
+  ## skill+ind hist and change
+  tmpG = GCMchange_tmax[,,i]*GCMweights$Wc[i]
+  tmpL = LOCAchange_tmax[,,i]*LOCAweights$Wc[i]
+  if(i==1){
+    GCMSIcmean_change_tmax = tmpG
+    LOCASIcmean_change_tmax = tmpL
+  } else {
+    GCMSIcmean_change_tmax = GCMSIcmean_change_tmax+tmpG
+    LOCASIcmean_change_tmax = LOCASIcmean_change_tmax+tmpL
+  }
+  
+}
+
+######
+# Calculate change variance (weighted and unweighted) - pr only
+
+GCMunweightedvar_change_pr = GCMskillvar_change_pr = GCMSIhvar_change_pr = GCMSIcvar_change_pr = GCMunweightedmean_change_pr
+LOCAunweightedvar_change_pr = LOCAskillvar_change_pr = LOCASIhvar_change_pr = LOCASIcvar_change_pr = LOCAunweightedmean_change_pr
+
+for(R in 1:length(lon)){
+  for(C in 1:length(lat)){
+    if(all(is.na(GCMchange_pr[R,C,])==TRUE)==FALSE){
+      GCMunweightedvar_change_pr[R,C] = var(GCMchange_pr[R,C,],na.rm=TRUE)
+      LOCAunweightedvar_change_pr[R,C] = var(LOCAchange_pr[R,C,],na.rm=TRUE)
+      
+      GCMskillvar_change_pr[R,C] = weighted.var(x=GCMchange_pr[R,C,],w=GCMweights$Ws,na.rm=TRUE)
+      LOCAskillvar_change_pr[R,C] = weighted.var(x=LOCAchange_pr[R,C,],w=LOCAweights$Ws,na.rm=TRUE)
+      
+      GCMSIhvar_change_pr[R,C] = weighted.var(x=GCMchange_pr[R,C,],w=GCMweights$Wh,na.rm=TRUE)
+      LOCASIhvar_change_pr[R,C] = weighted.var(x=LOCAchange_pr[R,C,],w=LOCAweights$Wh,na.rm=TRUE)
+      
+      GCMSIcvar_change_pr[R,C] = weighted.var(x=GCMchange_pr[R,C,],w=GCMweights$Wc,na.rm=TRUE)
+      LOCASIcvar_change_pr[R,C] = weighted.var(x=LOCAchange_pr[R,C,],w=LOCAweights$Wc,na.rm=TRUE)
+      message("Finished calcs for R: ",R," and C: ",C)
+    }
+  }
+}
+
+
+######
+# Calculate change variance (weighted and unweighted) - tmax only
+
+GCMunweightedvar_change_tmax = GCMskillvar_change_tmax = GCMSIhvar_change_tmax = GCMSIcvar_change_tmax = GCMunweightedmean_change_tmax
+LOCAunweightedvar_change_tmax = LOCAskillvar_change_tmax = LOCASIhvar_change_tmax = LOCASIcvar_change_tmax = LOCAunweightedmean_change_tmax
+
+for(R in 1:length(lon)){
+  for(C in 1:length(lat)){
+    if(all(is.na(GCMchange_tmax[R,C,])==TRUE)==FALSE){
+      GCMunweightedvar_change_tmax[R,C] = var(GCMchange_tmax[R,C,],na.rm=TRUE)
+      LOCAunweightedvar_change_tmax[R,C] = var(LOCAchange_tmax[R,C,],na.rm=TRUE)
+      
+      GCMskillvar_change_tmax[R,C] = weighted.var(x=GCMchange_tmax[R,C,],w=GCMweights$Ws,na.rm=TRUE)
+      LOCAskillvar_change_tmax[R,C] = weighted.var(x=LOCAchange_tmax[R,C,],w=LOCAweights$Ws,na.rm=TRUE)
+      
+      GCMSIhvar_change_tmax[R,C] = weighted.var(x=GCMchange_tmax[R,C,],w=GCMweights$Wh,na.rm=TRUE)
+      LOCASIhvar_change_tmax[R,C] = weighted.var(x=LOCAchange_tmax[R,C,],w=LOCAweights$Wh,na.rm=TRUE)
+      
+      GCMSIcvar_change_tmax[R,C] = weighted.var(x=GCMchange_tmax[R,C,],w=GCMweights$Wc,na.rm=TRUE)
+      LOCASIcvar_change_tmax[R,C] = weighted.var(x=LOCAchange_tmax[R,C,],w=LOCAweights$Wc,na.rm=TRUE)
+      message("Finished calcs for R: ",R," and C: ",C)
+    }
+  }
+}
+
+######
+# gather means - pr only
+meansdat_pr = NULL
+
+    histmeans_GCM_pr = c(mean(GCMunweightedmean_hist_pr,na.rm=TRUE),mean(GCMskillmean_hist_pr,na.rm=TRUE),mean(GCMSIhmean_hist_pr,na.rm=TRUE),mean(GCMSIcmean_hist_pr,na.rm=TRUE)) 
+    histmeans_LOCA_pr = c(mean(LOCAunweightedmean_hist_pr,na.rm=TRUE),mean(LOCAskillmean_hist_pr,na.rm=TRUE),mean(LOCASIhmean_hist_pr,na.rm=TRUE),mean(LOCASIcmean_hist_pr,na.rm=TRUE))
+    
+    changemeans_GCM_pr = c(mean(GCMunweightedmean_change_pr,na.rm=TRUE),mean(GCMskillmean_change_pr,na.rm=TRUE),mean(GCMSIhmean_change_pr,na.rm=TRUE),mean(GCMSIcmean_change_pr,na.rm=TRUE)) 
+    changemeans_LOCA_pr = c(mean(LOCAunweightedmean_change_pr,na.rm=TRUE),mean(LOCAskillmean_change_pr,na.rm=TRUE),mean(LOCASIhmean_change_pr,na.rm=TRUE),mean(LOCASIcmean_change_pr,na.rm=TRUE)) 
+    
+    changevars_GCM_pr = c(mean(GCMunweightedvar_change_pr,na.rm=TRUE),mean(GCMskillvar_change_pr,na.rm=TRUE),mean(GCMSIhvar_change_pr,na.rm=TRUE),mean(GCMSIcvar_change_pr,na.rm=TRUE)) 
+    changevars_LOCA_pr = c(mean(LOCAunweightedvar_change_pr,na.rm=TRUE),mean(LOCAskillvar_change_pr,na.rm=TRUE),mean(LOCASIhvar_change_pr,na.rm=TRUE),mean(LOCASIcvar_change_pr,na.rm=TRUE)) 
+    
+    obs = mean(OBS_pr,na.rm=TRUE)
+    region = stateapplied
+    
+    RMSE_GCM_pr = c(sqrt(mean((GCMunweightedmean_bias_pr)^2,na.rm=TRUE)),
+                 sqrt(mean((GCMskillmean_bias_pr)^2,na.rm=TRUE)),
+                 sqrt(mean((GCMSIhmean_bias_pr)^2,na.rm=TRUE)),
+                 sqrt(mean((GCMSIcmean_bias_pr)^2,na.rm=TRUE)))
+    
+    RMSE_LOCA_pr = c(sqrt(mean((LOCAunweightedmean_bias_pr)^2,na.rm=TRUE)),
+                  sqrt(mean((LOCAskillmean_bias_pr)^2,na.rm=TRUE)),
+                  sqrt(mean((LOCASIhmean_bias_pr)^2,na.rm=TRUE)),
+                  sqrt(mean((LOCASIcmean_bias_pr)^2,na.rm=TRUE)))
+    
+  
+  histmeans = c(histmeans_GCM_pr,histmeans_LOCA_pr)
+  changemeans = c(changemeans_GCM_pr,changemeans_LOCA_pr)
+  changevars = c(changevars_GCM_pr,changevars_LOCA_pr)
+  rmse = c(RMSE_GCM_pr,RMSE_LOCA_pr)
+  group = rep(c("unweighted","skill","SI-h","SI-c"),2)
+  DS = rep(c("CMIP5","LOCA"),each=4)
+  
+  meansframe_pr = data.frame(group,region,DS,histmeans,obs,changemeans,changevars,rmse)
+  meansdat_pr = rbind(meansdat_pr,meansframe_pr)
+  meansdat_pr$bias = meansdat_pr$histmeans-meansdat_pr$obs
+save(list="meansdat_pr",file=paste("WeightedMeansVars_pr_",var,"_WU",weightingused,"_SA",stateapplied,".Rdata",sep=""))
+
+
+######
+# gather means - tmax only
+meansdat_tmax = NULL
+
+    histmeans_GCM_tmax = c(mean(GCMunweightedmean_hist_tmax,na.rm=TRUE),mean(GCMskillmean_hist_tmax,na.rm=TRUE),mean(GCMSIhmean_hist_tmax,na.rm=TRUE),mean(GCMSIcmean_hist_tmax,na.rm=TRUE)) 
+    histmeans_LOCA_tmax = c(mean(LOCAunweightedmean_hist_tmax,na.rm=TRUE),mean(LOCAskillmean_hist_tmax,na.rm=TRUE),mean(LOCASIhmean_hist_tmax,na.rm=TRUE),mean(LOCASIcmean_hist_tmax,na.rm=TRUE))
+    
+    changemeans_GCM_tmax = c(mean(GCMunweightedmean_change_tmax,na.rm=TRUE),mean(GCMskillmean_change_tmax,na.rm=TRUE),mean(GCMSIhmean_change_tmax,na.rm=TRUE),mean(GCMSIcmean_change_tmax,na.rm=TRUE)) 
+    changemeans_LOCA_tmax = c(mean(LOCAunweightedmean_change_tmax,na.rm=TRUE),mean(LOCAskillmean_change_tmax,na.rm=TRUE),mean(LOCASIhmean_change_tmax,na.rm=TRUE),mean(LOCASIcmean_change_tmax,na.rm=TRUE)) 
+    
+    changevars_GCM_tmax = c(mean(GCMunweightedvar_change_tmax,na.rm=TRUE),mean(GCMskillvar_change_tmax,na.rm=TRUE),mean(GCMSIhvar_change_tmax,na.rm=TRUE),mean(GCMSIcvar_change_tmax,na.rm=TRUE)) 
+    changevars_LOCA_tmax = c(mean(LOCAunweightedvar_change_tmax,na.rm=TRUE),mean(LOCAskillvar_change_tmax,na.rm=TRUE),mean(LOCASIhvar_change_tmax,na.rm=TRUE),mean(LOCASIcvar_change_tmax,na.rm=TRUE)) 
+    
+    obs = mean(OBS_tmax,na.rm=TRUE)
+    region = stateapplied
+    
+    RMSE_GCM_tmax = c(sqrt(mean((GCMunweightedmean_bias_tmax)^2,na.rm=TRUE)),
+                    sqrt(mean((GCMskillmean_bias_tmax)^2,na.rm=TRUE)),
+                    sqrt(mean((GCMSIhmean_bias_tmax)^2,na.rm=TRUE)),
+                    sqrt(mean((GCMSIcmean_bias_tmax)^2,na.rm=TRUE)))
+    
+    RMSE_LOCA_tmax = c(sqrt(mean((LOCAunweightedmean_bias_tmax)^2,na.rm=TRUE)),
+                     sqrt(mean((LOCAskillmean_bias_tmax)^2,na.rm=TRUE)),
+                     sqrt(mean((LOCASIhmean_bias_tmax)^2,na.rm=TRUE)),
+                     sqrt(mean((LOCASIcmean_bias_tmax)^2,na.rm=TRUE)))
+    
+  
+  histmeans = c(histmeans_GCM_tmax,histmeans_LOCA_tmax)
+  changemeans = c(changemeans_GCM_tmax,changemeans_LOCA_tmax)
+  changevars = c(changevars_GCM_tmax,changevars_LOCA_tmax)
+  rmse = c(RMSE_GCM_tmax,RMSE_LOCA_tmax)
+  group = rep(c("unweighted","skill","SI-h","SI-c"),2)
+  DS = rep(c("CMIP5","LOCA"),each=4)
+  
+  meansframe_tmax = data.frame(group,region,DS,histmeans,obs,changemeans,changevars,rmse)
+  meansdat_tmax = rbind(meansdat_tmax,meansframe_tmax)
+meansdat_tmax$bias = meansdat_tmax$histmeans-meansdat_tmax$obs
+save(list="meansdat_tmax",file=paste("WeightedMeansVars_tmax_",var,"_WU",weightingused,"_SA",stateapplied,".Rdata",sep=""))
+
+save(list=c("GCMunweightedmean_bias_pr","GCMunweightedmean_bias_tmax",
+            "LOCAunweightedmean_bias_pr","LOCAunweightedmean_bias_tmax",
+            "GCMskillmean_bias_pr","LOCAskillmean_bias_pr",
+            "GCMskillmean_bias_tmax","LOCAskillmean_bias_tmax",
+            "GCMSIhmean_bias_pr","GCMSIhmean_bias_tmax",
+            "LOCASIhmean_bias_pr","LOCASIhmean_bias_tmax",
+            "GCMSIcmean_bias_pr","GCMSIcmean_bias_tmax",
+            "LOCASIcmean_bias_pr","LOCASIcmean_bias_tmax"),file=paste("Biasesbasedon_",var,"_WU",weightingused,"_SA",stateapplied,"_weighting.Rdata",sep=""))
+
+save(list=c("GCMunweightedmean_change_pr","GCMunweightedmean_change_tmax",
+            "LOCAunweightedmean_change_pr","LOCAunweightedmean_change_tmax",
+            "GCMskillmean_change_pr","LOCAskillmean_change_pr",
+            "GCMskillmean_change_tmax","LOCAskillmean_change_tmax",
+            "GCMSIhmean_change_pr","GCMSIhmean_change_tmax",
+            "LOCASIhmean_change_pr","LOCASIhmean_change_tmax",
+            "GCMSIcmean_change_pr","GCMSIcmean_change_tmax",
+            "LOCASIcmean_change_pr","LOCASIcmean_change_tmax"),file=paste("Changesbasedon_",var,"_WU",weightingused,"_SA",stateapplied,"_weighting.Rdata",sep=""))
+
+save(list=c("GCMunweightedvar_change_pr","GCMunweightedvar_change_tmax",
+            "LOCAunweightedvar_change_pr","LOCAunweightedvar_change_tmax",
+            "GCMskillvar_change_pr","LOCAskillvar_change_pr",
+            "GCMskillvar_change_tmax","LOCAskillvar_change_tmax",
+            "GCMSIhvar_change_pr","GCMSIhvar_change_tmax",
+            "LOCASIhvar_change_pr","LOCASIhvar_change_tmax",
+            "GCMSIcvar_change_pr","GCMSIcvar_change_tmax",
+            "LOCASIcvar_change_pr","LOCASIcvar_change_tmax"),file=paste("ChangeVarsbasedon_",var,"_WU",weightingused,"_SA",stateapplied,"_weighting.Rdata",sep=""))
+
+
+

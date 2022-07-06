@@ -4,9 +4,11 @@
 # plus consistency
 
 type="ann"
+plotname = "mv"
+statemask = "new mexico"
 
-load(paste("/home/woot0002/DS_ind/RMSEmats_combohc_LOCA_v4pronly_",type,".Rdata",sep=""))
-load(paste("/home/woot0002/DS_ind/RMSEmats_combohc_GCM_v4pronly_",type,".Rdata",sep=""))
+load(paste("/home/woot0002/DS_ind/RMSEmats_combohc_LOCA_",plotname,"_",type,"_",statemask,".Rdata",sep=""))
+load(paste("/home/woot0002/DS_ind/RMSEmats_combohc_GCM_",plotname,"_",type,"_",statemask,".Rdata",sep=""))
 
 #load("/home/woot0002/RMSEfiles/tasmin_RMSEmats.Rdata")
 
@@ -105,6 +107,10 @@ LOCAhdat$Wuh = Wu_LOCAh
 LOCAhdat$Wqh = Wq_LOCAh
 LOCAhdat$Wuc = Wu_LOCAc
 LOCAhdat$Wqc = Wq_LOCAc
+W_LOCAh = Wq_LOCAh*Wu_LOCAh
+LOCAhdat$Wh = W_LOCAh/sum(W_LOCAh) # normalize so weights add up to 1.
+W_LOCAc = Wq_LOCAc*Wu_LOCAc
+LOCAhdat$Wc = W_LOCAc/sum(W_LOCAc) # normalize so weights add up to 1.
 
 GCMhdat = GCMhdat[1:nummodels,]
 GCMhdat$product = paste(GCMhdat$DS,GCMhdat$training,sep="_")
@@ -112,8 +118,18 @@ GCMhdat$Wuh = Wu_GCMh
 GCMhdat$Wqh = Wq_GCMh
 GCMhdat$Wuc = Wu_GCMc
 GCMhdat$Wqc = Wq_GCMc
+W_GCMh = Wq_GCMh*Wu_GCMh
+GCMhdat$Wh = W_GCMh/sum(W_GCMh) # normalize so weights add up to 1.
+W_GCMc = Wq_GCMc*Wu_GCMc
+GCMhdat$Wc = W_GCMc/sum(W_GCMc) # normalize so weights add up to 1.
 
-save(list=c("GCMhdat","LOCAhdat"),file=paste("/home/woot0002/DS_ind/Sanderson_EnsembleWeights_v4pronly_",type,".Rdata",sep=""))
+GCMhdat[order(GCMhdat$Wh)[1:3],]
+GCMhdat[order(GCMhdat$Wc)[1:3],]
+
+LOCAhdat[order(LOCAhdat$Wh)[1:3],]
+LOCAhdat[order(LOCAhdat$Wc)[1:3],]
+
+save(list=c("GCMhdat","LOCAhdat"),file=paste("/home/woot0002/DS_ind/Sanderson_EnsembleWeights_",plotname,"_",type,"_",statemask,".Rdata",sep=""))
 
 
 chxi1 <- chull(x=LOCAhdat$Wqh,y=LOCAhdat$Wuh)
@@ -139,14 +155,14 @@ legend("bottomright",legend=c("CMIP5","LOCA"),col=c("black","blue"),lwd=2)
 
 
 
-    plot(Wqh~Wuh,data=chulllist_GCMh,type="l",lwd=2,xlim=c(0,1),ylim=c(0,1),col="black",ylab="Skill Weight",xlab="Independence Weight")
+    plot(Wqh~Wuh,data=chulllist_GCMh,main=statemask,type="l",lwd=2,xlim=c(0,1),ylim=c(0,1),col="black",ylab="Skill Weight",xlab="Independence Weight")
     lines(Wqh~Wuh,lwd=2,data=chulllist_LOCAh,col="blue") 
     
     lines(Wqc~Wuc,lwd=2,data=chulllist_GCMc,col="black",lty=2) 
     lines(Wqc~Wuc,lwd=2,data=chulllist_LOCAc,col="blue",lty=2) 
     
     abline(coef=c(0,1),lty=2)
-legend("bottomright",cex=0.75,legend=c("CMIP5 historical","LOCA historical","CMIP5 change","LOCA change"),col=c("black","blue","black","blue"),lwd=2,lty=c(1,1,2,2))
+legend("top",horiz=FALSE,cex=0.75,legend=c("CMIP5 historical","LOCA historical","CMIP5 change","LOCA change"),col=c("black","blue","black","blue"),lwd=2,lty=c(1,1,2,2))
 
 
 product = rep(rep(c("CMIP5","LOCA"),each=length(W_LOCAh)),2)

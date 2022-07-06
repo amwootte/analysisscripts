@@ -9,9 +9,10 @@ library(fields)
 library(sp)
 
 #vars = c("tmax","tmax95","tmin","tmin32","pr","pr50")
-vars = c("tmin")
+vars = c("pr")
 type="ann"
-plotname = "tmin"
+plotname = "pr"
+statemask = "new mexico"
 #vars=c("pr","pr50")
 ###
 # get RMSEs
@@ -19,7 +20,7 @@ plotname = "tmin"
 NRMSEhmatlist_LOCA = NRMSEcmatlist_LOCA = metadatlist_LOCA = fileslist_LOCA = list()
 
 for(i in 1:length(vars)){
-  load(paste("/home/woot0002/RMSEfiles/",vars[i],"_RMSEmats_combo_LOCA_v4_",type,".Rdata",sep=""))
+  load(paste("/home/woot0002/RMSEfiles/",vars[i],"_RMSEmats_combo_LOCA_v4_",type,"_",statemask,".Rdata",sep=""))
   NRMSEhmatlist_LOCA[[i]]=normLOCAhRMSEmat
   NRMSEcmatlist_LOCA[[i]]=normLOCAcRMSEmat
   metadatlist_LOCA[[i]]=LOCAhdat
@@ -29,7 +30,7 @@ for(i in 1:length(vars)){
 NRMSEhmatlist_GCM = NRMSEcmatlist_GCM = metadatlist_GCM = fileslist_GCM = list()
 
 for(i in 1:length(vars)){
-  load(paste("/home/woot0002/RMSEfiles/",vars[i],"_RMSEmats_combo_GCM_v4_",type,".Rdata",sep=""))
+  load(paste("/home/woot0002/RMSEfiles/",vars[i],"_RMSEmats_combo_GCM_v4_",type,"_",statemask,".Rdata",sep=""))
   NRMSEhmatlist_GCM[[i]]= normGCMhRMSEmat
   NRMSEcmatlist_GCM[[i]]=normGCMcRMSEmat
   metadatlist_GCM[[i]]=GCMhdat
@@ -91,7 +92,7 @@ melted_cormat_GCM <- melt(del.RMSE_GCM, na.rm = TRUE)
 topend = ceiling(max(c(NRMSEhmatout_GCM,NRMSEhmatout_LOCA,NRMSEcmatout_GCM,NRMSEcmatout_LOCA),na.rm=TRUE))
 
 ### Heatmap
-pdf(paste("/home/woot0002/DS_ind/NRMSEheatmap_",plotname,"_GCM_hist_",type,".pdf",sep=""),height=18,width=18)
+pdf(paste("/home/woot0002/DS_ind/NRMSEheatmap_",plotname,"_GCM_hist_",type,"_",statemask,".pdf",sep=""),height=18,width=18)
 ggplot(data = melted_cormat_GCM, aes(Var2, Var1, fill = value))+
   geom_tile(color = "white")+
   scale_fill_gradient2(low = "blue", high = "red", mid = "gray96", 
@@ -105,7 +106,7 @@ ggplot(data = melted_cormat_GCM, aes(Var2, Var1, fill = value))+
   coord_fixed()
 dev.off()
 
-pdf(paste("/home/woot0002/DS_ind/NRMSEheatmap_",plotname,"_LOCA_hist_",type,".pdf",sep=""),height=18,width=18)
+pdf(paste("/home/woot0002/DS_ind/NRMSEheatmap_",plotname,"_LOCA_hist_",type,"_",statemask,".pdf",sep=""),height=18,width=18)
 ggplot(data = melted_cormat_LOCA, aes(Var2, Var1, fill = value))+
   geom_tile(color = "white")+
   scale_fill_gradient2(low = "blue", high = "red", mid = "gray96", 
@@ -134,7 +135,7 @@ melted_cormat_GCM$value = ifelse(melted_cormat_GCM$value>1,1,melted_cormat_GCM$v
 topend = ceiling(max(c(NRMSEcmatout_GCM,NRMSEcmatout_LOCA),na.rm=TRUE))
 #topend=1
 ### Heatmap
-pdf(paste("/home/woot0002/DS_ind/NRMSEheatmap_",plotname,"_GCM_change_",type,".pdf",sep=""),height=18,width=18)
+pdf(paste("/home/woot0002/DS_ind/NRMSEheatmap_",plotname,"_GCM_change_",type,"_",statemask,".pdf",sep=""),height=18,width=18)
 ggplot(data = melted_cormat_GCM, aes(Var2, Var1, fill = value))+
   geom_tile(color = "white")+
   scale_fill_gradient2(low = "blue", high = "red", mid = "gray96", 
@@ -148,7 +149,7 @@ ggplot(data = melted_cormat_GCM, aes(Var2, Var1, fill = value))+
   coord_fixed()
 dev.off()
 
-pdf(paste("/home/woot0002/DS_ind/NRMSEheatmap_",plotname,"_LOCA_change_",type,".pdf",sep=""),height=18,width=18)
+pdf(paste("/home/woot0002/DS_ind/NRMSEheatmap_",plotname,"_LOCA_change_",type,"_",statemask,".pdf",sep=""),height=18,width=18)
 ggplot(data = melted_cormat_LOCA, aes(Var2, Var1, fill = value))+
   geom_tile(color = "white")+
   scale_fill_gradient2(low = "blue", high = "red", mid = "gray96", 
@@ -167,8 +168,8 @@ dev.off()
 ###
 # save out data
 
-save(list=c("NRMSEhmatout_LOCA","NRMSEcmatout_LOCA","LOCAhdat","simnames_LOCA"),file=paste("/home/woot0002/DS_ind/RMSEmats_combohc_LOCA_",plotname,"_",type,".Rdata",sep=""))
-save(list=c("NRMSEhmatout_GCM","NRMSEcmatout_GCM","GCMhdat","simnames_GCM"),file=paste("/home/woot0002/DS_ind/RMSEmats_combohc_GCM_",plotname,"_",type,".Rdata",sep=""))
+save(list=c("NRMSEhmatout_LOCA","NRMSEcmatout_LOCA","LOCAhdat","simnames_LOCA"),file=paste("/home/woot0002/DS_ind/RMSEmats_combohc_LOCA_",plotname,"_",type,"_",statemask,".Rdata",sep=""))
+save(list=c("NRMSEhmatout_GCM","NRMSEcmatout_GCM","GCMhdat","simnames_GCM"),file=paste("/home/woot0002/DS_ind/RMSEmats_combohc_GCM_",plotname,"_",type,"_",statemask,".Rdata",sep=""))
 
 
 

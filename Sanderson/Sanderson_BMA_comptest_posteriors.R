@@ -10,14 +10,13 @@ library(rasterVis)
 library(ggplot2)
 library(modi)
 
-
-setwd("/home/woot0002/DS_ind/")
+setwd("/home/woot0002/DS_ind/manuscript1")
 
 load(file="Sanderson_EnsembleWeights_v4pronly_ann.Rdata")
-BMAweights = read.table("best_BMA_combo.txt")
+BMAweights = read.table("/home/woot0002/DS_ind/best_BMA_combo.txt")
 GCMhdat$BMA = t(BMAweights)[,1]
 
-BMAweights = read.table("best_BMA_combo_LOCA.txt")
+BMAweights = read.table("/home/woot0002/DS_ind/best_BMA_combo_LOCA.txt")
 LOCAhdat$BMA = t(BMAweights)[,1]
 
 GCMweights= GCMhdat
@@ -59,7 +58,7 @@ LOCAprojfiles = system(paste("ls /home/woot0002/LOCA/regrid/",varin,"_*projclimo
 
 LIVNEHfile = system(paste("ls /home/woot0002/monthlyclimo/",varin,"_day*livneh*.nc",sep=""),intern=TRUE)
 
-load("/home/woot0002/DS_ind/GCMlist.Rdata")
+load("/home/woot0002/DS_ind/manuscript1/GCMlist.Rdata")
 
 GCM_hfiles = GCM_pfiles = LOCA_hfiles = LOCA_pfiles = c()
 
@@ -265,6 +264,19 @@ for(i in 1:length(LOCApgroup)){
 }
 
 sapply(LOCApvardatalist,mean,na.rm=TRUE)
+
+#######
+# plotting observations
+
+obscolorbar = colorramp(LOCAhvardatalist[[27]],colorchoice="whitetogreen",type="raw",Blimit=30,use_fixed_scale = FALSE, fixed_scale = c(-1100,600))
+
+testsfc = list(x=lon-360,y=lat,z=LOCAhvardatalist[[27]])
+surface(testsfc,type="I",zlim=obscolorbar[[1]],col=obscolorbar[[3]],breaks=obscolorbar[[2]],xlab="Longitude",ylab="Latitude",main="Livneh Observed Annual Precipitation")
+map("state",add=TRUE)
+text(-108.85,28.45,labels=paste("MAX = ",round(max(LOCAhvardatalist[[27]],na.rm=TRUE),1),sep=""),cex=1,pos = 4)
+text(-108.85,27.45,labels=paste("MEAN = ",round(mean(LOCAhvardatalist[[27]],na.rm=TRUE),1),sep=""),cex=1,pos = 4)
+text(-108.85,26.45,labels=paste("MIN = ",round(min(LOCAhvardatalist[[27]],na.rm=TRUE),1),sep=""),cex=1,pos = 4)
+
 
 #######
 # projected changes
@@ -529,16 +541,10 @@ meansdat$bias = meansdat$histmeans-meansdat$obs
 #save(list="meansdat",file="WeightedMeansVars_prann_pronly_modi.Rdata")
 meansdat$region <- factor(meansdat$region,levels = c('full','new mexico','texas','oklahoma','louisiana'),ordered = TRUE)
 
-ggplot(meansdat, aes(x=region, y=histmeans)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) + geom_point(data=meansdat, mapping=aes(x=region,y=obs),size=5,shape=23,fill="blue") +geom_hline(yintercept=0,linetype="dashed") + ggtitle("Historical Ens. Means against Livneh")+xlab("Region")+ylab("Historical Mean (mm)")
-ggplot(meansdat, aes(x=region, y=bias)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) +geom_hline(yintercept=0,linetype="dashed") + ggtitle("Bias of Ens. Means against Livneh")+xlab("Region")+ylab("Bias (mm)")
-ggplot(meansdat, aes(x=region, y=rmse)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) +geom_hline(yintercept=0,linetype="dashed") + ggtitle("RMSE of Ens. Means against Livneh")+xlab("Region")+ylab("RMSE (mm)")
-ggplot(meansdat, aes(x=region, y=changemeans)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) +geom_hline(yintercept=0,linetype="dashed") + ggtitle("Ens. Mean Projected Changes - RCP8.5 2070-2099")+xlab("Region")+ylab("Change (mm)")
-ggplot(meansdat, aes(x=region, y=changevars)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) +geom_hline(yintercept=0,linetype="dashed") + ggtitle("Ens. Variance Projected Changes - RCP8.5 2070-2099")+xlab("Region")+ylab("Var (mm^2)")
-
 ####
 # BMA all grab
 
-load("/home/woot0002/DS_ind/BMAposterior_meansandvars.Rdata")
+load("/home/woot0002/DS_ind/manuscript1/BMAposterior_meansandvars.Rdata")
 
 meansdatBMA = NULL
 for(i in 1:100){
@@ -604,40 +610,6 @@ meansdatBMA$region <- factor(meansdatBMA$region,levels = c('full','new mexico','
 meansdat$changesd = sqrt(meansdat$changevars)
 
 
-ggplot(meansdatBMA, aes(x=region, y=histmeans)) + 
-  stat_boxplot(geom ='errorbar', width = 0.5) +
-  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=histmeans,colour = factor(group),shape=factor(DS)),size=2.5) + geom_point(data=meansdat, mapping=aes(x=region,y=obs),size=2.5,shape=23,fill="blue") +
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
-  ggtitle("Hist Ens. Mean")+xlab("")+ylab("Mean (mm)")+ylim(0,1550) +facet_grid(cols=vars(DS))
-
-ggplot(meansdatBMA, aes(x=region, y=bias)) + 
-  stat_boxplot(geom ='errorbar', width = 0.5) +
-  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=bias,colour = factor(group),shape=factor(DS)),size=2.5) +
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
-  ggtitle("Hist Ens. Mean Bias")+xlab("")+ylab("Bias (mm)")+ylim(range(meansdatBMA$bias,na.rm=TRUE)) +facet_grid(cols=vars(DS))+geom_hline(yintercept=0,linetype="dashed")
-
-ggplot(meansdatBMA, aes(x=region, y=rmse)) + 
-  stat_boxplot(geom ='errorbar', width = 0.5) +
-  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=rmse,colour = factor(group),shape=factor(DS)),size=2.5) +
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
-  ggtitle("Hist Ens. Mean RMSE")+xlab("")+ylab("RMSE (mm)")+ylim(range(meansdatBMA$rmse,na.rm=TRUE)) +facet_grid(cols=vars(DS))+geom_hline(yintercept=0,linetype="dashed")
-
-ggplot(meansdatBMA, aes(x=region, y=changemeans)) + 
-  stat_boxplot(geom ='errorbar', width = 0.5) +
-  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=changemeans,colour = factor(group),shape=factor(DS)),size=2.5) +
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
-  ggtitle("Ens. Mean Projected Change")+xlab("")+ylab("Change (mm)")+ylim(range(meansdatBMA$changemeans,na.rm=TRUE)) +facet_grid(cols=vars(DS))+geom_hline(yintercept=0,linetype="dashed")
-
-ggplot(meansdatBMA, aes(x=region, y=changesd)) + 
-  stat_boxplot(geom ='errorbar', width = 0.5) +
-  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=changesd,colour = factor(group),shape=factor(DS)),size=2.5) +
-  theme_bw() + 
-  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
-  ggtitle("Ens.Std. Deviation Projected Change")+xlab("")+ylab("Std. Deviation (mm)")+ylim(range(meansdatBMA$changesd,na.rm=TRUE)) +facet_grid(cols=vars(DS))+geom_hline(yintercept=0,linetype="dashed")
 
 ######
 
@@ -701,40 +673,201 @@ message("GCM calcs finished for GCM ",m," / 26")
 
 memsdat$region <- factor(memsdat$region,levels = c('full','new mexico','texas','oklahoma','louisiana'),ordered = TRUE)
 
+#####
+
+ggplot(meansdat, aes(x=region, y=histmeans)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) + geom_point(data=meansdat, mapping=aes(x=region,y=obs),size=5,shape=23,fill="blue") +geom_hline(yintercept=0,linetype="dashed") + ggtitle("Historical Ens. Means against Livneh")+xlab("Region")+ylab("Historical Mean (mm)")
+ggplot(meansdat, aes(x=region, y=bias)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) +geom_hline(yintercept=0,linetype="dashed") + ggtitle("Bias of Ens. Means against Livneh")+xlab("Region")+ylab("Bias (mm)")
+ggplot(meansdat, aes(x=region, y=rmse)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) +geom_hline(yintercept=0,linetype="dashed") + ggtitle("RMSE of Ens. Means against Livneh")+xlab("Region")+ylab("RMSE (mm)")
+ggplot(meansdat, aes(x=region, y=changemeans)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) +geom_hline(yintercept=0,linetype="dashed") + ggtitle("Ens. Mean Projected Changes - RCP8.5 2070-2099")+xlab("Region")+ylab("Change (mm)")
+ggplot(meansdat, aes(x=region, y=changevars)) + geom_point(aes(colour = factor(group),shape=factor(DS)),size=5) +geom_hline(yintercept=0,linetype="dashed") + ggtitle("Ens. Variance Projected Changes - RCP8.5 2070-2099")+xlab("Region")+ylab("Var (mm^2)")
+
+#####
+
+ggplot(meansdatBMA, aes(x=region, y=histmeans)) + 
+  stat_boxplot(geom ='errorbar', width = 0.5) +
+  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=histmeans,colour = factor(group),shape=factor(DS)),size=2.5) + geom_point(data=meansdat, mapping=aes(x=region,y=obs),size=2.5,shape=23,fill="blue") +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
+  ggtitle("Hist Ens. Mean")+xlab("")+ylab("Mean (mm)")+ylim(0,1600) +facet_grid(cols=vars(DS))
+
+ggplot(meansdatBMA, aes(x=region, y=bias)) + 
+  stat_boxplot(geom ='errorbar', width = 0.5) +
+  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=bias,colour = factor(group),shape=factor(DS)),size=2.5) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
+  ggtitle("Hist Ens. Mean Bias")+xlab("")+ylab("Bias (mm)")+ylim(-750,500) +facet_grid(cols=vars(DS))+geom_hline(yintercept=0,linetype="dashed")
+
+ggplot(meansdatBMA, aes(x=region, y=rmse)) + 
+  stat_boxplot(geom ='errorbar', width = 0.5) +
+  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=rmse,colour = factor(group),shape=factor(DS)),size=2.5) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
+  ggtitle("Hist Ens. Mean RMSE")+xlab("")+ylab("RMSE (mm)")+ylim(0,750) +facet_grid(cols=vars(DS))+geom_hline(yintercept=0,linetype="dashed")
+
+ggplot(meansdatBMA, aes(x=region, y=changemeans)) + 
+  stat_boxplot(geom ='errorbar', width = 0.5) +
+  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=changemeans,colour = factor(group),shape=factor(DS)),size=2.5) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
+  ggtitle("Ens. Mean Projected Change")+xlab("")+ylab("Change (mm)")+ylim(-400,250) +facet_grid(cols=vars(DS))+geom_hline(yintercept=0,linetype="dashed")
+
+ggplot(meansdatBMA, aes(x=region, y=changesd)) + 
+  stat_boxplot(geom ='errorbar', width = 0.5) +
+  geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=meansdat, mapping=aes(x=region,y=changesd,colour = factor(group),shape=factor(DS)),size=2.5) +
+  theme_bw() + 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) +
+  ggtitle("Ens.Std. Deviation Projected Change")+xlab("")+ylab("Std. Deviation (mm)")+ylim(range(meansdatBMA$changesd,na.rm=TRUE)) +facet_grid(cols=vars(DS))+geom_hline(yintercept=0,linetype="dashed")
+
+#####
 
 ggplot(memsdat, aes(x=region, y=histmeans, fill=DS)) + 
   stat_boxplot(geom ='errorbar', width = 0.5) +
   geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) + geom_point(data=memsdat, mapping=aes(x=region,y=obs),size=2.5,shape=23,fill="blue") +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) + scale_fill_manual(values=c( "cyan", "yellow")) +
-  ggtitle("Hist Ens. Mean")+xlab("")+ylab("Mean (mm)")+ylim(range(memsdat$histmeans))
+  ggtitle("Hist Ens. Mean")+xlab("")+ylab("Mean (mm)")+ylim(0,1600)
 
 ggplot(memsdat, aes(x=region, y=bias, fill=DS)) + 
   stat_boxplot(geom ='errorbar', width = 0.5) +
   geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) + scale_fill_manual(values=c( "cyan", "yellow")) +
-  ggtitle("Bias of Hist Ens. Mean")+xlab("")+ylab("Bias (mm)")+ylim(range(memsdat$bias))
+  ggtitle("Bias of Hist Ens. Mean")+xlab("")+ylab("Bias (mm)")+ylim(-750,500)
 
 ggplot(memsdat, aes(x=region, y=rmse, fill=DS)) + 
   stat_boxplot(geom ='errorbar', width = 0.5) +
   geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) + scale_fill_manual(values=c( "cyan", "yellow")) +
-  ggtitle("RMSE of Hist Ens. Mean")+xlab("")+ylab("RMSE (mm)")+ylim(range(memsdat$rmse))
+  ggtitle("RMSE of Hist Ens. Mean")+xlab("")+ylab("RMSE (mm)")+ylim(0,750)
 
 ggplot(memsdat, aes(x=region, y=changemeans, fill=DS)) + 
   stat_boxplot(geom ='errorbar', width = 0.5) +
   geom_boxplot(outlier.colour="red", outlier.shape=8,outlier.size=0.5,width=0.5,position=position_dodge2(width=0.5)) +
   theme_bw() + 
   theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust=0.5)) + scale_fill_manual(values=c( "cyan", "yellow")) +
-  ggtitle("Ens. Mean Projected Change")+xlab("")+ylab("Change (mm)")+ylim(range(memsdat$changemeans))
+  ggtitle("Ens. Mean Projected Change")+xlab("")+ylab("Change (mm)")+ylim(-400,250)
 
 #######
 # Get SD of change means for BMA sims and raw ensembles
 
+#####
+# projected change
+
 aggregate(memsdat$changemeans,by=list(regionDS = paste(memsdat$region,memsdat$DS,sep="_")),sd,na.rm=TRUE)
 aggregate(meansdatBMA$changemeans,by=list(regionDS = paste(meansdatBMA$region,meansdatBMA$DS,sep="_")),sd,na.rm=TRUE)
 
+regionDS = unique(paste(memsdat$region,memsdat$DS,sep="_"))
+region = unique(as.character(memsdat$region))
+
+
+LOCAsds = GCMsds = NULL
+## SI-h
+for(r in 1:length(region)){
+  
+  GCMsdtmp = sqrt(weighted.var(memsdat$changemeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="CMIP5")],w=GCMweights$Wh))
+  LOCAsdtmp = sqrt(weighted.var(memsdat$changemeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="LOCA")],w=LOCAweights$Wh))
+  
+  DS = "CMIP5"
+  regionin = region[r]
+  tmpframe = data.frame(regionin,DS,GCMsdtmp)
+  GCMsds = rbind(GCMsds,tmpframe)
+  
+  DS = "LOCA"
+  tmpframe = data.frame(regionin,DS,LOCAsdtmp)
+  LOCAsds = rbind(LOCAsds,tmpframe)
+}
+
+LOCAsds = GCMsds = NULL
+# Skill
+for(r in 1:length(region)){
+  
+  GCMsdtmp = sqrt(weighted.var(memsdat$changemeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="CMIP5")],w=GCMweights$Ws))
+  LOCAsdtmp = sqrt(weighted.var(memsdat$changemeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="LOCA")],w=LOCAweights$Ws))
+  
+  DS = "CMIP5"
+  regionin = region[r]
+  tmpframe = data.frame(regionin,DS,GCMsdtmp)
+  GCMsds = rbind(GCMsds,tmpframe)
+  
+  DS = "LOCA"
+  tmpframe = data.frame(regionin,DS,LOCAsdtmp)
+  LOCAsds = rbind(LOCAsds,tmpframe)
+}
+
+LOCAsds = GCMsds = NULL
+# SI-c
+for(r in 1:length(region)){
+  
+  GCMsdtmp = sqrt(weighted.var(memsdat$changemeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="CMIP5")],w=GCMweights$Wc))
+  LOCAsdtmp = sqrt(weighted.var(memsdat$changemeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="LOCA")],w=LOCAweights$Wc))
+  
+  DS = "CMIP5"
+  regionin = region[r]
+  tmpframe = data.frame(regionin,DS,GCMsdtmp)
+  GCMsds = rbind(GCMsds,tmpframe)
+  
+  DS = "LOCA"
+  tmpframe = data.frame(regionin,DS,LOCAsdtmp)
+  LOCAsds = rbind(LOCAsds,tmpframe)
+}
+
+
+#####
+# historical
+
 aggregate(memsdat$histmeans,by=list(regionDS = paste(memsdat$region,memsdat$DS,sep="_")),sd,na.rm=TRUE)
 aggregate(meansdatBMA$histmeans,by=list(regionDS = paste(meansdatBMA$region,meansdatBMA$DS,sep="_")),sd,na.rm=TRUE)
+
+
+LOCAsds = GCMsds = NULL
+## SI-h
+for(r in 1:length(region)){
+  
+  GCMsdtmp = sqrt(weighted.var(memsdat$histmeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="CMIP5")],w=GCMweights$Wh))
+  LOCAsdtmp = sqrt(weighted.var(memsdat$histmeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="LOCA")],w=LOCAweights$Wh))
+  
+  DS = "CMIP5"
+  regionin = region[r]
+  tmpframe = data.frame(regionin,DS,GCMsdtmp)
+  GCMsds = rbind(GCMsds,tmpframe)
+  
+  DS = "LOCA"
+  tmpframe = data.frame(regionin,DS,LOCAsdtmp)
+  LOCAsds = rbind(LOCAsds,tmpframe)
+}
+
+LOCAsds = GCMsds = NULL
+# Skill
+for(r in 1:length(region)){
+  
+  GCMsdtmp = sqrt(weighted.var(memsdat$histmeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="CMIP5")],w=GCMweights$Ws))
+  LOCAsdtmp = sqrt(weighted.var(memsdat$histmeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="LOCA")],w=LOCAweights$Ws))
+  
+  DS = "CMIP5"
+  regionin = region[r]
+  tmpframe = data.frame(regionin,DS,GCMsdtmp)
+  GCMsds = rbind(GCMsds,tmpframe)
+  
+  DS = "LOCA"
+  tmpframe = data.frame(regionin,DS,LOCAsdtmp)
+  LOCAsds = rbind(LOCAsds,tmpframe)
+}
+
+LOCAsds = GCMsds = NULL
+# SI-c
+for(r in 1:length(region)){
+  
+  GCMsdtmp = sqrt(weighted.var(memsdat$histmeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="CMIP5")],w=GCMweights$Wc))
+  LOCAsdtmp = sqrt(weighted.var(memsdat$histmeans[which(as.character(memsdat$region)==region[r] & memsdat$DS=="LOCA")],w=LOCAweights$Wc))
+  
+  DS = "CMIP5"
+  regionin = region[r]
+  tmpframe = data.frame(regionin,DS,GCMsdtmp)
+  GCMsds = rbind(GCMsds,tmpframe)
+  
+  DS = "LOCA"
+  tmpframe = data.frame(regionin,DS,LOCAsdtmp)
+  LOCAsds = rbind(LOCAsds,tmpframe)
+}
+
