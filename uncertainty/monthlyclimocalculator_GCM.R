@@ -8,7 +8,7 @@ library(maps)
 library(fields)
 library(sp)
 
-var = "tasmin"
+var = "tasmax"
 
 GCMtable = read.table("/home/woot0002/GCMfilesforanalysis_LOCA.csv",sep=",",header=TRUE)
 GCMtable$GCMs = paste(GCMtable$model,GCMtable$ensemble,sep="_")
