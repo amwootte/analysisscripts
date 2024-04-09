@@ -21,10 +21,9 @@ library(matrixStats)
 #####
 # Version of this script to run parallel but also one domain as a time.
 
-#statelist = c("louisiana","oklahoma","north carolina","florida","kentucky","SGP-NCA","SE-NCA")
 var = "pr"
 enssize = 5
-ensgroup = "EAA"
+ensgroup = "CMIP6"
 mask = "SGP-NCA"
 climotype="annual"
 histfile = paste("/home/woot0002/RCMES/",var,"_",ensgroup,"_climo_",mask,"_",climotype,".nc",sep="")
