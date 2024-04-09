@@ -20,9 +20,9 @@ library(doParallel)
 #####
 # Version of this script to run parallel but also one domain as a time.
 
-var = "tasmin"
+var = "pr"
 enssize = 5
-ensgroup = "EAA"
+ensgroup = "CMIP6"
 mask = "SGP-NCA"
 climotype = "annual"
 inputfile = paste("/home/woot0002/RCMES/",var,"_",ensgroup,"_climo_",mask,"_",climotype,".nc",sep="")
